@@ -1,0 +1,256 @@
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\connectors\base-connector.ts[24m[0m
+[0m  [2m5:23[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\connectors\steam\index.ts[24m[0m
+[0m  [2m15:29[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\database\index.ts[24m[0m
+[0m  [2m186:14[22m  [33mwarning[39m  'error' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m186:21[22m  [31merror[39m    Empty block statement              [2mno-empty[22m[0m
+[0m  [2m190:14[22m  [33mwarning[39m  'error' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m190:21[22m  [31merror[39m    Empty block statement              [2mno-empty[22m[0m
+[0m  [2m194:14[22m  [33mwarning[39m  'error' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m194:21[22m  [31merror[39m    Empty block statement              [2mno-empty[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\index.ts[24m[0m
+[0m  [2m133:20[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m142:63[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\auth-service.ts[24m[0m
+[0m   [2m42:57[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m44:126[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m59:78[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m70:17[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m123:64[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m124:16[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m132:15[22m   [31merror[39m    Empty block statement                     [2mno-empty[22m[0m
+[0m  [2m145:30[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m152:64[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m160:15[22m   [31merror[39m    Empty block statement                     [2mno-empty[22m[0m
+[0m  [2m169:23[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m188:17[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m196:23[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m239:101[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m259:23[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m280:23[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m331:23[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m343:23[22m   [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\data-service.ts[24m[0m
+[0m   [2m34:17[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m65:44[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m71:49[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m128:19[22m  [33mwarning[39m  'imageSourceType' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m209:81[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m299:92[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m314:88[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\epic-service.ts[24m[0m
+[0m   [2m12:18[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m125:21[22m   [31merror[39m    Empty block statement                                   [2mno-empty[22m[0m
+[0m  [2m154:56[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m184:98[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m259:116[22m  [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m265:11[22m   [31merror[39m    'accessToken' is never reassigned. Use 'const' instead  [2mprefer-const[22m[0m
+[0m  [2m266:11[22m   [31merror[39m    'displayName' is never reassigned. Use 'const' instead  [2mprefer-const[22m[0m
+[0m  [2m281:54[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m302:21[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m332:23[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m342:60[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m356:48[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m403:48[22m   [33mwarning[39m  Unexpected any. Specify a different type                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\game-service.ts[24m[0m
+[0m   [2m92:78[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m100:16[22m  [33mwarning[39m  'e' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m111:76[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m113:66[22m  [33mwarning[39m  'e' is defined but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m120:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m134:61[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m135:76[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m136:61[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m150:80[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m185:95[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m193:40[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m226:26[22m  [31merror[39m    A `require()` style import is forbidden   [2m@typescript-eslint/no-require-imports[22m[0m
+[0m  [2m244:91[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m255:95[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m267:95[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m284:95[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m294:95[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\playtime-monitor.ts[24m[0m
+[0m  [2m119:23[22m   [31merror[39m    A `require()` style import is forbidden   [2m@typescript-eslint/no-require-imports[22m[0m
+[0m  [2m134:112[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\social-service.ts[24m[0m
+[0m  [2m27:34[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\steam-scanner.ts[24m[0m
+[0m    [2m8:37[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m156:13[22m  [31merror[39m    Empty block statement                     [2mno-empty[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\steam-service.ts[24m[0m
+[0m    [2m1:34[22m   [33mwarning[39m  'app' is defined but never used                      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m150:54[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m152:111[22m  [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m154:9[22m    [31merror[39m    'authData' is never reassigned. Use 'const' instead  [2mprefer-const[22m[0m
+[0m  [2m154:19[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m163:17[22m   [31merror[39m    Empty block statement                                [2mno-empty[22m[0m
+[0m  [2m185:129[22m  [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m188:21[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m196:15[22m   [31merror[39m    Empty block statement                                [2mno-empty[22m[0m
+[0m  [2m241:44[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m281:21[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m309:44[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m328:21[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m428:57[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m449:24[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m491:24[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m493:33[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m513:30[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m544:19[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m561:42[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m565:51[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m566:57[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m596:51[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m605:40[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m612:96[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m628:44[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m650:47[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m655:98[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m669:39[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m701:51[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m712:39[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m716:45[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m717:47[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m725:38[22m   [33mwarning[39m  Unexpected any. Specify a different type             [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\services\system-service.ts[24m[0m
+[0m  [2m1:28[22m  [33mwarning[39m  'app' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\main\utils\vdf-parser.ts[24m[0m
+[0m   [2m3:41[22m  [33mwarning[39m  Unexpected any. Specify a different type            [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m7:15[22m  [33mwarning[39m  Unexpected any. Specify a different type            [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m8:16[22m  [33mwarning[39m  Unexpected any. Specify a different type            [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m13:9[22m   [31merror[39m    'line' is never reassigned. Use 'const' instead     [2mprefer-const[22m[0m
+[0m  [2m51:9[22m   [33mwarning[39m  'expectBracket' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\preload\index.ts[24m[0m
+[0m  [2m18:3[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m  [2m20:3[22m  [31merror[39m  Use "@ts-expect-error" instead of "@ts-ignore", as "@ts-ignore" will do nothing if the following line is error-free  [2m@typescript-eslint/ban-ts-comment[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\App.tsx[24m[0m
+[0m    [2m1:8[22m   [33mwarning[39m  'React' is defined but never used                             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m74:36[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m79:38[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m80:36[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m81:42[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m84:44[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m88:56[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m90:54[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m94:48[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m96:10[22m  [33mwarning[39m  'steamGamesError' is assigned a value but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m97:10[22m  [33mwarning[39m  'steamSearch' is assigned a value but never used              [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m97:23[22m  [33mwarning[39m  'setSteamSearch' is assigned a value but never used           [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m98:10[22m  [33mwarning[39m  'steamSort' is assigned a value but never used                [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m98:21[22m  [33mwarning[39m  'setSteamSort' is assigned a value but never used             [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m99:10[22m  [33mwarning[39m  'steamInstallFilter' is assigned a value but never used       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m99:30[22m  [33mwarning[39m  'setSteamInstallFilter' is assigned a value but never used    [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m100:10[22m  [33mwarning[39m  'steamGenreFilter' is assigned a value but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m100:28[22m  [33mwarning[39m  'setSteamGenreFilter' is assigned a value but never used      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m101:10[22m  [33mwarning[39m  'steamVisibleCount' is assigned a value but never used        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m106:10[22m  [33mwarning[39m  'locale' is assigned a value but never used                   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m108:10[22m  [33mwarning[39m  'sessionElapsedSeconds' is assigned a value but never used    [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m109:10[22m  [33mwarning[39m  'memoryInfo' is assigned a value but never used               [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m121:31[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m122:32[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m159:67[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m184:36[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m240:20[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m318:19[22m  [33mwarning[39m  '_' is assigned a value but never used                        [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m338:47[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m351:17[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m370:48[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m375:17[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m436:9[22m   [33mwarning[39m  'handleSteamPlay' is assigned a value but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m452:49[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m466:9[22m   [33mwarning[39m  'handleSteamStore' is assigned a value but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m470:9[22m   [33mwarning[39m  'handleSteamAchievements' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m487:28[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m688:66[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m718:45[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m720:42[22m  [33mwarning[39m  Unexpected any. Specify a different type                      [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\AddGameModal.tsx[24m[0m
+[0m   [2m3:8[22m   [33mwarning[39m  'clsx' is defined but never used          [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m61:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\GameCard.tsx[24m[0m
+[0m  [2m1:8[22m  [33mwarning[39m  'React' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\GameDetailsModal.tsx[24m[0m
+[0m    [2m1:8[22m    [33mwarning[39m  'React' is defined but never used                                      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:19[22m   [33mwarning[39m  'Clock' is defined but never used                                      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:26[22m   [33mwarning[39m  'Star' is defined but never used                                       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:32[22m   [33mwarning[39m  'MoreVertical' is defined but never used                               [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:46[22m   [33mwarning[39m  'Globe' is defined but never used                                      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:53[22m   [33mwarning[39m  'Monitor' is defined but never used                                    [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:71[22m   [33mwarning[39m  'ImageIcon' is defined but never used                                  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:82[22m   [33mwarning[39m  'Video' is defined but never used                                      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:89[22m   [33mwarning[39m  'Calendar' is defined but never used                                   [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:99[22m   [33mwarning[39m  'History' is defined but never used                                    [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:108[22m  [33mwarning[39m  'RefreshCw' is defined but never used                                  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m    [2m3:129[22m  [33mwarning[39m  'HardDrive' is defined but never used                                  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m13:36[22m   [33mwarning[39m  Unexpected any. Specify a different type                               [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m17:56[22m   [33mwarning[39m  Unexpected any. Specify a different type                               [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m19:56[22m   [33mwarning[39m  Unexpected any. Specify a different type                               [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m324:41[22m   [31merror[39m    Expected an assignment or function call and instead saw an expression  [2m@typescript-eslint/no-unused-expressions[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\LoginScreen.tsx[24m[0m
+[0m   [2m1:27[22m  [33mwarning[39m  'useEffect' is defined but never used     [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m5:60[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m29:19[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\Logo.test.tsx[24m[0m
+[0m  [2m1:18[22m  [33mwarning[39m  'screen' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m2:32[22m  [33mwarning[39m  'vi' is defined but never used      [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\Logo.tsx[24m[0m
+[0m  [2m1:8[22m  [33mwarning[39m  'React' is defined but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\SettingsModal.tsx[24m[0m
+[0m    [2m8:9[22m   [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m12:25[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m27:10[22m  [33mwarning[39m  'epicDisplayName' is assigned a value but never used  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m   [2m43:50[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m72:50[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m75:37[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m   [2m85:36[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m120:22[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m143:22[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m196:30[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m196:42[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m372:14[22m  [33mwarning[39m  'e' is defined but never used                         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m453:22[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m473:19[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m509:19[22m  [33mwarning[39m  Unexpected any. Specify a different type              [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m525:14[22m  [33mwarning[39m  'err' is defined but never used                       [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\SocialPage.tsx[24m[0m
+[0m  [2m26:9[22m  [33mwarning[39m  Unexpected any. Specify a different type                                [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m39:3[22m  [33mwarning[39m  'user' is defined but never used. Allowed unused args must match /^_/u  [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\components\SteamLibrary.tsx[24m[0m
+[0m  [2m1:8[22m   [33mwarning[39m  'React' is defined but never used         [2m@typescript-eslint/no-unused-vars[22m[0m
+[0m  [2m6:10[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m9:27[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[4mC:\Users\papex\Documents\trae_projects\PlayHub\src\renderer\src\utils\electron.ts[24m[0m
+[0m  [2m2:36[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m  [2m4:46[22m  [33mwarning[39m  Unexpected any. Specify a different type  [2m@typescript-eslint/no-explicit-any[22m[0m
+[0m[0m
+[0m[31m[1m✖ 200 problems (18 errors, 182 warnings)[22m[39m[0m
+[0m[31m[1m[22m[39m[31m[1m  4 errors and 0 warnings potentially fixable with the `--fix` option.[22m[39m[0m
+[0m[31m[1m[22m[39m[0m

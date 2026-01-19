@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>PlayHub Loading</title>
+    <style>
+      body {
+        margin: 0;
+        padding: 0;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        background-color: #020617; /* slate-950 */
+        color: #e2e8f0; /* slate-200 */
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        user-select: none;
+        overflow: hidden;
+      }
+
+      .logo-container {
+        margin-bottom: 2rem;
+        display: flex;
+        align-items: center;
+        gap: 1rem;
+      }
+
+      .logo-text {
+        font-size: 2.5rem;
+        font-weight: 800;
+        letter-spacing: -0.05em;
+        background: linear-gradient(to right, #3b82f6, #10b981); /* blue-500 to emerald-500 */
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .loader {
+        width: 48px;
+        height: 48px;
+        border: 4px solid #1e293b; /* slate-800 */
+        border-bottom-color: #10b981; /* emerald-500 */
+        border-radius: 50%;
+        display: inline-block;
+        box-sizing: border-box;
+        animation: rotation 1s linear infinite;
+        margin-bottom: 1.5rem;
+      }
+
+      @keyframes rotation {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      .status-text {
+        font-size: 0.875rem;
+        color: #94a3b8; /* slate-400 */
+        font-weight: 500;
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+      }
+
+      @keyframes pulse {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0.5;
+        }
+      }
+      
+      .version {
+        position: absolute;
+        bottom: 1rem;
+        font-size: 0.75rem;
+        color: #475569; /* slate-600 */
+      }
+    </style>
+  </head>
+  <body>
+    <div class="logo-container">
+      <!-- Optional: Add SVG Logo here if available -->
+      <div class="logo-text">PlayHub</div>
+    </div>
+    <span class="loader"></span>
+    <div class="status-text">Wird geladen...</div>
+    <div class="version" id="version">v1.0.0</div>
+
+    <script>
+        // Set version if available via URL params or just leave static for now
+        // const urlParams = new URLSearchParams(window.location.search);
+        // const version = urlParams.get('version');
+        // if (version) document.getElementById('version').textContent = 'v' + version;
+    </script>
+  </body>
+</html>

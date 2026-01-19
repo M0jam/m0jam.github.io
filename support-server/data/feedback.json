@@ -1,0 +1,72 @@
+[
+  {
+    "id": "1768577475603",
+    "timestamp": "2026-01-16T15:31:15.603Z",
+    "userAgent": "node",
+    "ip": "::1",
+    "type": "bug",
+    "content": "asdasdASFASfASFGSG",
+    "rating": 5,
+    "contactEmail": "mori.gemke@gmail.com"
+  },
+  {
+    "id": "1768577807036",
+    "timestamp": "2026-01-16T15:36:47.036Z",
+    "userAgent": "node",
+    "ip": "::1",
+    "type": "bug",
+    "content": "fgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfgfg",
+    "rating": 5,
+    "contactEmail": "mori.gemke@gmail.com"
+  },
+  {
+    "id": "1768577988801",
+    "timestamp": "2026-01-16T15:39:48.801Z",
+    "userAgent": "node",
+    "ip": "::1",
+    "type": "bug",
+    "content": "sAFFFFFFFFFFFFFFFFFFFFFF",
+    "rating": 5,
+    "contactEmail": "mori.gemke@gmail.com"
+  },
+  {
+    "id": "1768578296104",
+    "timestamp": "2026-01-16T15:44:56.104Z",
+    "userAgent": "node",
+    "ip": "::1",
+    "type": "bug",
+    "content": "kkkkkkkkkkkkkkkkkk",
+    "rating": 5,
+    "contactEmail": "mori.gemke@gmail.com"
+  },
+  {
+    "id": "1768578344393",
+    "timestamp": "2026-01-16T15:45:44.393Z",
+    "userAgent": "node",
+    "ip": "::1",
+    "type": "feature",
+    "content": "zven braun",
+    "rating": 1,
+    "contactEmail": "mori.gemke@gmail.com"
+  },
+  {
+    "id": "1768588973904",
+    "timestamp": "2026-01-16T18:42:53.904Z",
+    "userAgent": "node",
+    "ip": "::1",
+    "type": "bug",
+    "content": "eWGGGGGGGGGGGG",
+    "rating": 5,
+    "contactEmail": "mori.gemke@gmail.com"
+  },
+  {
+    "id": "1768684834741",
+    "timestamp": "2026-01-17T21:20:34.741Z",
+    "userAgent": "node",
+    "ip": "::1",
+    "type": "bug",
+    "content": "ddddddddddddddddd",
+    "rating": 5,
+    "contactEmail": "mori.gemke@gmail.com"
+  }
+]

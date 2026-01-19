@@ -1,0 +1,82 @@
+name: Discord Release Notification
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Discord Webhook
+        uses: actions/github-script@v6
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+          RELEASE_NAME: ${{ github.event.release.name }}
+          RELEASE_BODY: ${{ github.event.release.body }}
+          RELEASE_URL: ${{ github.event.release.html_url }}
+        with:
+          script: |
+            // Get the webhook URL from secrets
+            const webhookUrl = process.env.DISCORD_WEBHOOK;
+            if (!webhookUrl) {
+              console.log('No DISCORD_WEBHOOK secret set. Skipping notification.');
+              return;
+            }
+
+            // Limit body length to avoid Discord errors (max 2048 chars for description)
+            let description = process.env.RELEASE_BODY || 'No changelog provided.';
+            if (description.length > 2000) {
+              description = description.substring(0, 1997) + '...';
+            }
+
+            // Construct the Discord payload (Embed)
+            const payload = {
+              username: "PlayHub Bot",
+              avatar_url: "https://raw.githubusercontent.com/M0jam/m0jam.github.io/main/src/renderer/src/assets/top-right-logo.png",
+              embeds: [{
+                title: `🚀 New Update Available: ${process.env.RELEASE_NAME}`,
+                url: process.env.RELEASE_URL,
+                description: description,
+                color: 5814783, // #5865F2 (Blurple)
+                fields: [
+                  {
+                    name: "Version",
+                    value: process.env.RELEASE_TAG,
+                    inline: true
+                  },
+                  {
+                    name: "Download",
+                    value: `[Get it on GitHub](${process.env.RELEASE_URL})`,
+                    inline: true
+                  }
+                ],
+                footer: {
+                  text: "PlayHub Update System"
+                },
+                timestamp: new Date().toISOString()
+              }]
+            };
+
+            // Send the request using standard fetch (available in Node 20 environment of ubuntu-latest)
+            // Note: actions/github-script uses the node version of the runner.
+            // If fetch is missing (older runner), we can use 'https' module, but fetch is standard now.
+            
+            try {
+                const response = await fetch(webhookUrl, {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify(payload),
+                });
+                
+                if (!response.ok) {
+                   console.error(`Discord API returned ${response.status}: ${response.statusText}`);
+                } else {
+                   console.log('Successfully sent Discord notification.');
+                }
+            } catch (error) {
+                console.error('Failed to send Discord notification:', error);
+            }

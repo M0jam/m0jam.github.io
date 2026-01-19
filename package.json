@@ -1,0 +1,121 @@
+{
+  "name": "playhub",
+  "version": "1.0.2",
+  "description": "Unified Game Launcher",
+  "main": "./out/main/index.js",
+  "scripts": {
+    "dev": "electron-vite dev",
+    "build": "electron-vite build",
+    "preview": "electron-vite preview",
+    "dist": "npm run generate-notes && node -r dotenv/config node_modules/electron-builder/cli.js",
+    "generate-notes": "node scripts/generate-changelog.js",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives",
+    "test": "vitest run"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/M0jam/m0jam.github.io"
+  },
+  "dependencies": {
+    "@electron-toolkit/preload": "^3.0.2",
+    "@electron-toolkit/utils": "^4.0.0",
+    "better-sqlite3": "^11.8.1",
+    "clsx": "^2.1.0",
+    "date-fns": "^3.3.1",
+    "discord-rpc": "^4.0.1",
+    "dotenv": "^17.2.3",
+    "electron-log": "^5.4.3",
+    "electron-updater": "^6.1.8",
+    "howlongtobeat": "^1.8.0",
+    "i18next": "^25.7.4",
+    "i18next-browser-languagedetector": "^8.2.0",
+    "igdb-api-node": "^6.0.5",
+    "lucide-react": "^0.344.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-i18next": "^16.5.3",
+    "tailwind-merge": "^2.2.1"
+  },
+  "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.1",
+    "@types/better-sqlite3": "^7.6.9",
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "@types/react-dom": "^18.2.19",
+    "@typescript-eslint/eslint-plugin": "^8.53.0",
+    "@typescript-eslint/parser": "^8.53.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "autoprefixer": "^10.4.18",
+    "electron": "^29.1.0",
+    "electron-builder": "^24.13.3",
+    "electron-vite": "^2.1.0",
+    "eslint": "^8.57.1",
+    "eslint-plugin-react": "^7.37.5",
+    "jsdom": "^27.4.0",
+    "postcss": "^8.4.35",
+    "tailwindcss": "^3.4.1",
+    "typescript": "^5.3.3",
+    "vite": "^5.1.4",
+    "vitest": "^4.0.17"
+  },
+  "build": {
+    "appId": "com.playhub.app",
+    "productName": "PlayHub",
+    "releaseInfo": {
+      "releaseNotesFile": "release-notes.md"
+    },
+    "win": {
+      "icon": "build/icon.ico",
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ]
+    },
+    "linux": {
+      "icon": "build/icon.png",
+      "target": [
+        "AppImage",
+        "deb"
+      ]
+    },
+    "mac": {
+      "icon": "build/icon.icns",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PlayHub",
+      "license": "build/eula.txt"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "M0jam",
+        "repo": "m0jam.github.io"
+      }
+    ]
+  }
+}

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayHub Animated Logo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @keyframes glitch {
+            0% { text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff; }
+            25% { text-shadow: -2px 2px 0px #ff00ff, 2px -2px 0px #00ffff; }
+            50% { text-shadow: 2px -2px 0px #ff00ff, -2px 2px 0px #00ffff; }
+            75% { text-shadow: -2px -2px 0px #ff00ff, 2px 2px 0px #00ffff; }
+            100% { text-shadow: 2px 2px 0px #ff00ff, -2px -2px 0px #00ffff; }
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-10px); }
+        }
+        @keyframes shine {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        .glitch-text {
+            animation: glitch 3s infinite alternate;
+        }
+        .logo-container {
+            animation: float 6s ease-in-out infinite;
+        }
+        .shine-text {
+            background: linear-gradient(
+                to right,
+                #5865F2 20%,
+                #fff 50%,
+                #5865F2 80%
+            );
+            background-size: 200% auto;
+            color: transparent;
+            -webkit-background-clip: text;
+            background-clip: text;
+            animation: shine 4s linear infinite;
+        }
+    </style>
+</head>
+<body class="bg-[#090b10] flex items-center justify-center h-screen overflow-hidden">
+    
+    <div class="logo-container text-center">
+        <!-- Main Logo Text -->
+        <h1 class="text-8xl font-black tracking-tighter mb-4 shine-text relative z-10">
+            PlayHub
+        </h1>
+        
+        <!-- Subtitle / Badge -->
+        <div class="flex justify-center items-center gap-3">
+            <span class="px-4 py-1 bg-[#5865F2] text-white font-bold rounded-full text-xl shadow-[0_0_20px_rgba(88,101,242,0.5)] animate-pulse">
+                ALPHA
+            </span>
+            <span class="text-slate-500 font-mono text-xl tracking-widest">LAUNCH</span>
+        </div>
+
+        <!-- Decorative Elements -->
+        <div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#5865F2] opacity-5 blur-[120px] rounded-full -z-10"></div>
+    </div>
+
+</body>
+</html>

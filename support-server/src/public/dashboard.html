@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PlayHub Feedback Dashboard</title>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: #f0f2f5; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 12px; border-bottom: 1px solid #eee; }
+        th { background: #f8f9fa; font-weight: 600; }
+        .badge { padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .badge-bug { background: #fee2e2; color: #991b1b; }
+        .badge-feature { background: #dbeafe; color: #1e40af; }
+        .badge-general { background: #f3f4f6; color: #374151; }
+        .btn { padding: 8px 16px; border-radius: 4px; border: none; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn-primary { background: #2563eb; color: white; }
+        .filters { margin-bottom: 15px; display: flex; gap: 10px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Feedback Dashboard</h1>
+        <a href="/api/feedback/export" class="btn btn-primary" target="_blank">Export CSV</a>
+    </div>
+
+    <div class="card">
+        <div class="filters">
+            <select id="typeFilter" onchange="filterData()">
+                <option value="all">All Types</option>
+                <option value="bug">Bug Report</option>
+                <option value="feature">Feature Request</option>
+                <option value="general">General</option>
+            </select>
+        </div>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Type</th>
+                    <th>Rating</th>
+                    <th>Content</th>
+                    <th>Contact</th>
+                    <th>User Agent</th>
+                </tr>
+            </thead>
+            <tbody id="tableBody">
+                <tr><td colspan="6">Loading...</td></tr>
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        let allData = [];
+
+        async function fetchData() {
+            const tbody = document.getElementById('tableBody');
+            try {
+                const response = await fetch('/api/feedback', {
+                    headers: {
+                        'Authorization': 'Basic ' + btoa('admin:password')
+                    }
+                });
+                if (!response.ok) {
+                    tbody.innerHTML = `<tr><td colspan="6" style="color:red">Error loading data: HTTP ${response.status}</td></tr>`;
+                    return;
+                }
+                allData = await response.json();
+                renderTable(allData);
+            } catch (error) {
+                tbody.innerHTML = `<tr><td colspan="6" style="color:red">Error loading data: ${error.message}</td></tr>`;
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('tableBody');
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6">No feedback found.</td></tr>';
+                return;
+            }
+            tbody.innerHTML = data.map(item => `
+                <tr>
+                    <td>${new Date(item.timestamp).toLocaleString()}</td>
+                    <td><span class="badge badge-${item.type}">${item.type}</span></td>
+                    <td>${item.rating || '-'}</td>
+                    <td>${item.content}</td>
+                    <td>${item.contactEmail || '-'}</td>
+                    <td style="font-size: 10px; color: #666;">${item.userAgent}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterData() {
+            const type = document.getElementById('typeFilter').value;
+            const filtered = type === 'all' ? allData : allData.filter(d => d.type === type);
+            renderTable(filtered);
+        }
+
+        fetchData();
+    </script>
+</body>
+</html>
