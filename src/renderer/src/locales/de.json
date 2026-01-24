@@ -5,6 +5,10 @@
     "generalDescription": "Passe dein PlayHub-Erlebnis an.",
     "appearance": "Erscheinungsbild",
     "appearanceDescription": "Zwischen dunklem und hellem Modus wechseln.",
+    "colorTheme": "Farbdesign",
+    "colorThemeDescription": "Wähle deine Akzentfarbe.",
+    "backgroundTheme": "Hintergrund-Design",
+    "backgroundThemeDescription": "Wähle deinen Hintergrundstil.",
     "startOnBoot": "Beim Start ausführen",
     "startOnBootDescription": "PlayHub beim Windows-Start starten.",
     "minimizeToTray": "In den Tray minimieren",
@@ -20,6 +24,7 @@
       "account": "Konto",
       "integrations": "Integrationen",
       "updates": "Updates",
+      "appearance": "Skins & Design",
       "general": "Allgemein",
       "feedback": "Feedback",
       "system": "System"
@@ -66,6 +71,7 @@
       "secureSessionActive": "Sichere Sitzung aktiv",
       "steamSecureDescription": "Dein Steam-Konto ist sicher über OpenID verbunden. Wir nutzen deine Sitzung nur, um Bibliothek und Freunde auszulesen.",
       "epicSecureDescription": "Dein Epic-Games-Konto ist sicher über OAuth verbunden. Wir nutzen deine Sitzung nur, um dein Profil und deine Bibliothek auszulesen.",
+      "gogSecureDescription": "Dein GOG-Galaxy-Konto ist sicher über OAuth verbunden. Wir nutzen deine Sitzung nur, um dein Profil und deine Bibliothek auszulesen.",
       "steamWebApiKeyLabel": "Erweitert: Steam Web API Key",
       "steamApiKeyHelp": "Wenn Spiele, die du besitzt, in der Bibliothek fehlen, ist ein Steam Web API Key die zuverlässigste Lösung.",
       "steamApiKeyLink": "API-Schlüssel hier holen",
@@ -118,11 +124,11 @@
       "newBadge": "Neu",
       "latestUpdate": "Neueste Version",
       "releaseNotes": "Release Notes",
-      "fallbackVersion": "1.0.0",
-      "fallbackVersionDescription": "Erster öffentlicher Build",
-      "fallbackChange1": "Vereinheitlichte Bibliotheks-Startseite, Steam-Integration und Social-Spine.",
-      "fallbackChange2": "Kontoverwaltung mit Profilbearbeitung und Geräteentkopplung.",
-      "fallbackChange3": "Grundlage für automatische Updates und zukünftige Plattform-Connectoren.",
+      "fallbackVersion": "1.0.4",
+      "fallbackVersionDescription": "Sicherheits- & UX-Verbesserungen",
+      "fallbackChange1": "Registrierung: Manueller 'Weiter'-Button für besseren Ablauf.",
+      "fallbackChange2": "Sicherheit: Gerätetrennung erfordert jetzt E-Mail-Verifizierungscode.",
+      "fallbackChange3": "Allgemeine Stabilitäts- und Leistungsverbesserungen.",
       "dialogUpdateAvailable": "Update verfügbar",
       "dialogNewVersion": "Neue Version",
       "dialogEstimatedSize": "Geschätzte Größe",
@@ -169,6 +175,9 @@
       "profilePasswordRequired": "Bitte bestätige dein Passwort",
       "profileUpdated": "Profil aktualisiert",
       "profileUpdateFailed": "Profil konnte nicht aktualisiert werden",
+      "initiateDisconnectFailed": "Bestätigungscode konnte nicht gesendet werden. Bitte versuche es erneut.",
+      "invalidCode": "Ungültiger oder abgelaufener Bestätigungscode.",
+      "usernameChanged": "Profil aktualisiert. Benutzername wurde zu '{newName}' geändert (ursprünglicher Name war vergeben).",
       "avatarMustBeImage": "Avatar muss ein Bild sein",
       "disconnectPasswordRequired": "Bitte gib dein Passwort zum Trennen ein",
       "disconnectAccountFailed": "Konto konnte nicht getrennt werden",
@@ -197,6 +206,7 @@
       "allGames": "Alle Spiele",
       "favorites": "Favoriten",
       "installed": "Installiert",
+      "tags": "Tags",
       "collection": "Sammlung",
       "inventory": "Inventar",
       "steamLibrary": "Steam-Bibliothek",
@@ -255,7 +265,8 @@
       "introLabel": "Kurze Tour",
       "introTitle": "Lass uns ein kurzes Onboarding machen",
       "introBody": "Wir zeigen dir kurz, wo du Einstellungen, deine Bibliothek, Freunde und unseren Discord findest. Das dauert nur ein paar Sekunden.",
-      "introStart": "Tour starten"
+      "introStart": "Tour starten",
+      "skip": "Selbst erkunden"
     },
     "news": {
       "title": "Neueste News",
@@ -282,6 +293,12 @@
       "afternoon": "Guten Nachmittag",
       "evening": "Guten Abend"
     }
+  },
+  "registration": {
+    "welcome": "Willkommen bei PlayHub!",
+    "success": "Wir freuen uns, dass du da bist! Mach dich bereit für dein nächstes Abenteuer.",
+    "redirecting": "Weiterleitung zum Dashboard...",
+    "continue": "Weiter zum Dashboard"
   },
   "steamLibrary": {
     "header": "Steam-Bibliothek",
@@ -373,12 +390,15 @@
     "logIn": "Anmelden",
     "alreadyHaveAccount": "Du hast bereits ein Konto?",
     "dontHaveAccount": "Du hast noch kein Konto?",
-    "authFailed": "Authentifizierung fehlgeschlagen"
+    "authFailed": "Authentifizierung fehlgeschlagen",
+    "usernameChangedTitle": "Benutzername angepasst",
+    "usernameChangedBody": "Dein gewünschter Benutzername '{old}' war vergeben. Dir wurde '{new}' zugewiesen."
   },
   "gameDetails": {
     "tabs": {
       "overview": "Übersicht",
-      "stats": "Statistik & Verlauf"
+      "stats": "Statistik & Verlauf",
+      "notes": "Notizen"
     },
     "actions": {
       "close": "Details schließen",
@@ -407,6 +427,7 @@
       "unknown": "Unbekannt",
       "platformLabel": "Plattform",
       "platformSteam": "Steam",
+      "platformGog": "GOG Galaxy",
       "platformPc": "PC",
       "storePage": "Shop-Seite",
       "communityHub": "Community-Hub",
@@ -461,6 +482,15 @@
     "monthsAgo": "Vor {{count}} Monaten",
     "yearAgo": "Vor 1 Jahr",
     "yearsAgo": "Vor {{count}} Jahren"
+  },
+  "intro": {
+    "welcome": "Willkommen {{name}}, was spielen wir heute?",
+    "random": "Zufall",
+    "lastPlayed": "Zuletzt gespielt",
+    "skip": "Überspringen",
+    "play": "Spielen",
+    "details": "Details",
+    "suggestion": "Vorschlag"
   },
   "errors": {
     "steamLibraryLoad": "Steam-Bibliothek konnte nicht geladen werden",

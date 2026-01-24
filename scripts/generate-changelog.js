@@ -6,6 +6,15 @@ const path = require('path');
 const releaseNotesPath = path.join(__dirname, '../release-notes.md');
 
 try {
+  // Check if release notes already exist and are not empty
+  if (fs.existsSync(releaseNotesPath) && fs.statSync(releaseNotesPath).size > 0) {
+    console.log('Release notes file already exists. Skipping auto-generation to preserve manual edits.');
+    // Optional: Check if we want to force overwrite via env var, e.g. FORCE_CHANGELOG=true
+    if (!process.env.FORCE_CHANGELOG) {
+      process.exit(0);
+    }
+  }
+
   console.log('Generating release notes...');
 
   // Try to find the last tag

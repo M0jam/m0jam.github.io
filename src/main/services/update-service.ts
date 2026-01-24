@@ -1,6 +1,8 @@
 import { app, ipcMain, BrowserWindow } from 'electron'
 import { autoUpdater } from 'electron-updater'
 import log from 'electron-log'
+import { join } from 'path'
+import * as fs from 'fs'
 
 export type UpdateStatus = 'idle' | 'checking' | 'available' | 'not-available' | 'downloading' | 'downloaded' | 'error'
 
@@ -115,6 +117,13 @@ export class UpdateService {
     autoUpdater.autoDownload = false
     autoUpdater.autoInstallOnAppQuit = false
     autoUpdater.allowDowngrade = true
+
+    // Log if GH_TOKEN is present to help debugging
+    if (process.env.GH_TOKEN) {
+      log.info('GH_TOKEN detected in environment')
+    } else {
+      log.info('GH_TOKEN not found in environment')
+    }
 
     autoUpdater.on('checking-for-update', () => {
       this.updateState.status = 'checking'

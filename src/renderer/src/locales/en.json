@@ -5,6 +5,10 @@
     "generalDescription": "Customize your PlayHub experience.",
     "appearance": "Appearance",
     "appearanceDescription": "Switch between dark and light mode.",
+    "colorTheme": "Color Theme",
+    "colorThemeDescription": "Choose your accent color.",
+    "backgroundTheme": "Background Theme",
+    "backgroundThemeDescription": "Choose your background style.",
     "startOnBoot": "Start on Boot",
     "startOnBootDescription": "Launch PlayHub when Windows starts.",
     "minimizeToTray": "Minimize to Tray",
@@ -20,6 +24,7 @@
       "account": "Account",
       "integrations": "Integrations",
       "updates": "Updates",
+      "appearance": "Skins & Design",
       "general": "General",
       "feedback": "Feedback",
       "system": "System"
@@ -48,7 +53,15 @@
       "disconnectDeviceDescription": "This will remove your PlayHub account data and sessions from this device. You will need to register or log in again to use PlayHub here.",
       "disconnectPasswordPlaceholder": "Confirm your password to continue",
       "disconnectAccount": "Disconnect account",
-      "disconnectFromDevice": "Disconnect from this device"
+      "disconnectFromDevice": "Disconnect from this device",
+      "codeSentTo": "A verification code has been sent to {{email}}",
+      "enterCode": "Enter verification code",
+      "resendCode": "Resend code",
+      "sending": "Sending...",
+      "verifying": "Verifying...",
+      "verifyAndDisconnect": "Verify & Disconnect",
+      "sendCode": "Send Verification Code",
+      "disconnectWarning": "Disconnecting will remove all local data associated with this account. This action cannot be undone."
     },
     "integrations": {
       "title": "Platform Integrations",
@@ -66,6 +79,7 @@
       "secureSessionActive": "Secure Session Active",
       "steamSecureDescription": "Your Steam account is securely connected via OpenID. We only use your session to read library and friends data.",
       "epicSecureDescription": "Your Epic Games account is securely connected via OAuth. We only use your session to read your profile and library.",
+      "gogSecureDescription": "Your GOG Galaxy account is securely connected via OAuth. We only use your session to read your profile and library.",
       "steamWebApiKeyLabel": "Advanced: Steam Web API Key",
       "steamApiKeyHelp": "If games you own are missing from the library, adding a Steam Web API Key is the most reliable fix.",
       "steamApiKeyLink": "Get API Key here",
@@ -118,11 +132,11 @@
       "newBadge": "New",
       "latestUpdate": "Latest Update",
       "releaseNotes": "Release Notes",
-      "fallbackVersion": "1.0.0",
-      "fallbackVersionDescription": "Initial public build",
-      "fallbackChange1": "Unified library home, Steam integration, and social spine.",
-      "fallbackChange2": "Account management with profile editing and device disconnect.",
-      "fallbackChange3": "Foundations for automatic updates and future platform connectors.",
+      "fallbackVersion": "1.0.4",
+      "fallbackVersionDescription": "Security & UX Improvements",
+      "fallbackChange1": "Registration: Added manual 'Continue' button for smoother onboarding.",
+      "fallbackChange2": "Security: Device disconnect now requires email verification code.",
+      "fallbackChange3": "General stability and performance improvements.",
       "dialogUpdateAvailable": "Update available",
       "dialogNewVersion": "New version",
       "dialogEstimatedSize": "Estimated size",
@@ -169,6 +183,8 @@
       "profilePasswordRequired": "Please confirm your password",
       "profileUpdated": "Profile updated",
       "profileUpdateFailed": "Could not update profile",
+      "initiateDisconnectFailed": "Failed to send verification code. Please try again.",
+      "invalidCode": "Invalid or expired verification code.",
       "avatarMustBeImage": "Avatar must be an image",
       "disconnectPasswordRequired": "Please enter your password to disconnect",
       "disconnectAccountFailed": "Could not disconnect account",
@@ -188,7 +204,8 @@
       "updateToastReminderSaved": "We will remind you again in about {{days}} day{{suffix}}.",
       "updateToastReminderError": "Could not save reminder preference.",
       "updateToastDownloadFailed": "Failed to start update download. Please check your connection and try again.",
-      "onboardingResetSuccess": "Onboarding has been reset and will be shown again next time."
+      "onboardingResetSuccess": "Onboarding has been reset and will be shown again next time.",
+      "usernameChanged": "Profile updated. Username changed to '{newName}' (original name was taken)."
     }
   },
   "app": {
@@ -197,6 +214,7 @@
       "allGames": "All Games",
       "favorites": "Favorites",
       "installed": "Installed",
+      "tags": "Tags",
       "collection": "Collection",
       "inventory": "Inventory",
       "steamLibrary": "Steam Library",
@@ -255,7 +273,8 @@
       "introLabel": "Quick tour",
       "introTitle": "Let’s do a short onboarding",
       "introBody": "We’ll quickly show you where to find settings, your library, friends and our Discord. This only takes a few seconds.",
-      "introStart": "Start tour"
+      "introStart": "Start tour",
+      "skip": "Explore yourself"
     },
     "news": {
       "title": "Latest News",
@@ -283,45 +302,86 @@
       "evening": "Good Evening"
     }
   },
-  "steamLibrary": {
-    "header": "Steam Library",
-    "statsOwned": "{{count}} Games Owned",
-    "statsInstalled": "{{count}} Installed",
-    "statsHours": "{{count}} Hours Played",
-    "searchPlaceholder": "Search games...",
-    "refreshTitle": "Refresh Library",
-    "filters": {
-      "all": "All Games",
-      "installed": "Installed",
-      "uninstalled": "Uninstalled"
-    },
-    "sort": {
-      "name": "Name (A-Z)",
-      "playtime": "Playtime",
-      "lastPlayed": "Last Played"
-    },
-    "view": {
-      "gridTitle": "Grid View",
-      "listTitle": "List View"
-    },
-    "listHeaders": {
-      "name": "Name",
-      "status": "Status",
-      "playtime": "Playtime",
-      "lastPlayed": "Last Played"
-    },
-    "status": {
-      "ready": "Ready",
-      "library": "Library",
-      "installTitle": "Install"
-    },
-    "empty": {
-      "title": "No games found matching your filters.",
-      "clear": "Clear filters"
-    },
-    "loadMore": "Load More"
+  "registration": {
+    "welcome": "Welcome to PlayHub!",
+    "success": "We are happy to have you here! Get ready for your next adventure.",
+    "redirecting": "Redirecting to dashboard...",
+    "continue": "Continue to Dashboard"
   },
-  "social": {
+  "steamLibrary": {
+      "header": "Steam Library",
+      "statsOwned": "{{count}} Games Owned",
+      "statsInstalled": "{{count}} Installed",
+      "statsHours": "{{count}} Hours Played",
+      "searchPlaceholder": "Search games...",
+      "refreshTitle": "Refresh Library",
+      "filters": {
+        "all": "All Games",
+        "installed": "Installed",
+        "uninstalled": "Uninstalled"
+      },
+      "sort": {
+        "name": "Name (A-Z)",
+        "playtime": "Playtime",
+        "lastPlayed": "Last Played"
+      },
+      "view": {
+        "gridTitle": "Grid View",
+        "listTitle": "List View"
+      },
+      "listHeaders": {
+        "name": "Name",
+        "status": "Status",
+        "playtime": "Playtime",
+        "lastPlayed": "Last Played"
+      },
+      "status": {
+        "ready": "Ready",
+        "library": "Library",
+        "installTitle": "Install"
+      },
+      "empty": {
+        "title": "No games found matching your filters.",
+        "clear": "Clear filters"
+      },
+      "loadMore": "Load More",
+      "play": "Play",
+      "install": "Install",
+      "lastPlayed": "Last played",
+      "noGamesFound": "No games found"
+    },
+    "gogLibrary": {
+      "header": "GOG Galaxy Library",
+      "statsOwned": "{{count}} Games Owned",
+      "statsInstalled": "{{count}} Installed",
+      "statsHours": "{{count}} Hours Played",
+      "searchPlaceholder": "Search games...",
+      "refreshTitle": "Refresh Library",
+      "empty": {
+        "title": "No games found matching your filters.",
+        "clear": "Clear filters"
+      },
+      "loadMore": "Load More",
+      "play": "Play",
+      "install": "Install",
+      "lastPlayed": "Last played",
+      "noGamesFound": "No games found. Sync your GOG account to get started.",
+      "filters": {
+        "all": "All Games",
+        "installed": "Installed",
+        "uninstalled": "Not Installed"
+      },
+      "sort": {
+        "name": "Name",
+        "playtime": "Playtime",
+        "lastPlayed": "Last Played"
+      },
+      "view": {
+        "gridTitle": "Grid View",
+        "listTitle": "List View"
+      }
+    },
+    "social": {
     "friendsTitle": "Friends",
     "syncFriendsTitle": "Sync Friends",
     "addFriendTitle": "Add Friend",
@@ -373,12 +433,15 @@
     "logIn": "Log In",
     "alreadyHaveAccount": "Already have an account?",
     "dontHaveAccount": "Don't have an account?",
-    "authFailed": "Authentication failed"
+    "authFailed": "Authentication failed",
+    "usernameChangedTitle": "Username Adjusted",
+    "usernameChangedBody": "Your requested username '{old}' was taken. You have been assigned '{new}'."
   },
   "gameDetails": {
     "tabs": {
       "overview": "Overview",
-      "stats": "Stats & History"
+      "stats": "Stats & History",
+      "notes": "Notes"
     },
     "actions": {
       "close": "Close details",
@@ -407,6 +470,7 @@
       "unknown": "Unknown",
       "platformLabel": "Platform",
       "platformSteam": "Steam",
+      "platformGog": "GOG Galaxy",
       "platformPc": "PC",
       "storePage": "Store Page",
       "communityHub": "Community Hub",
@@ -461,6 +525,15 @@
     "monthsAgo": "{{count}} months ago",
     "yearAgo": "1 year ago",
     "yearsAgo": "{{count}} years ago"
+  },
+  "intro": {
+    "welcome": "Welcome {{name}}, what are we playing today?",
+    "random": "Random",
+    "lastPlayed": "Last Played",
+    "skip": "Skip",
+    "play": "Play",
+    "details": "Details",
+    "suggestion": "Suggestion"
   },
   "errors": {
     "steamLibraryLoad": "Could not load Steam library",

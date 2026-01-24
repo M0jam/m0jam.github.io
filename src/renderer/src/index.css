@@ -2,13 +2,33 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Global user-select disable */
+:root {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-app-region: no-drag;
+
+  /* Default Theme (Blue) */
+  --color-primary-400: 96 165 250;
+  --color-primary-500: 59 130 246;
+  --color-primary-600: 37 99 235;
+  --color-primary-700: 29 78 216;
+  --color-glow: 59 130 246;
+}
+
+/* Re-enable for inputs */
+input, textarea, [contenteditable="true"] {
+  user-select: text;
+  -webkit-user-select: text;
+}
+
 @layer utilities {
   .glass-panel {
     @apply bg-slate-900/60 backdrop-blur-xl border border-white/5 shadow-xl;
   }
   
   .text-glow {
-    text-shadow: 0 0 20px rgba(59, 130, 246, 0.5);
+    text-shadow: 0 0 20px rgb(var(--color-glow) / 0.5);
   }
 
   .text-glow-gold {

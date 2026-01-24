@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { electron } from '../utils/electron'
 import { Logo } from './Logo'
 import { useTranslation } from 'react-i18next'
 
-export function LoginScreen({ onLogin }: { onLogin: (user: any) => void }) {
+export function LoginScreen({ onLogin }: { onLogin: (user: any, notification?: { title: string; body: string }, isNewUser?: boolean) => void }) {
   const { t } = useTranslation()
   const [isRegister, setIsRegister] = useState(false)
   const [email, setEmail] = useState('')
@@ -20,7 +20,17 @@ export function LoginScreen({ onLogin }: { onLogin: (user: any) => void }) {
         if (result && result.token) {
           window.localStorage.setItem('playhub_session', result.token)
         }
-        onLogin(result.user)
+        
+        // Check if username was changed
+        let notification
+        if (result.user.username !== username) {
+          notification = {
+            title: t('login.usernameChangedTitle'),
+            body: t('login.usernameChangedBody', { old: username, new: result.user.username })
+          }
+        }
+        
+        onLogin(result.user, notification, true)
       } else {
         const result = await electron.ipcRenderer.invoke('auth:login', { email, password })
         if (result && result.token) {
@@ -34,8 +44,8 @@ export function LoginScreen({ onLogin }: { onLogin: (user: any) => void }) {
   }
 
   return (
-    <div className="fixed inset-0 bg-slate-950 flex items-center justify-center z-50">
-      <div className="bg-slate-900 p-8 rounded-xl border border-slate-800 w-96 shadow-2xl">
+    <div className="fixed inset-0 flex items-center justify-center z-50">
+      <div className="bg-slate-900/90 backdrop-blur-sm p-8 rounded-xl border border-slate-800 w-96 shadow-2xl">
         <div className="flex justify-center mb-6">
             <Logo className="h-16 w-auto" />
         </div>
@@ -57,7 +67,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: any) => void }) {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-primary-500"
                 required
               />
             </div>
@@ -68,7 +78,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: any) => void }) {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-primary-500"
               required
             />
           </div>
@@ -78,13 +88,13 @@ export function LoginScreen({ onLogin }: { onLogin: (user: any) => void }) {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-slate-800 border border-slate-700 rounded px-3 py-2 text-white focus:outline-none focus:border-primary-500"
               required
             />
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded transition-colors"
+            className="w-full bg-primary-600 hover:bg-primary-500 text-white font-bold py-2 rounded transition-colors"
           >
             {isRegister ? t('login.signUp') : t('login.logIn')}
           </button>
@@ -94,7 +104,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: any) => void }) {
           {isRegister ? t('login.alreadyHaveAccount') : t('login.dontHaveAccount')}{' '}
           <button
             onClick={() => setIsRegister(!isRegister)}
-            className="text-blue-400 hover:underline"
+            className="text-primary-400 hover:underline"
           >
             {isRegister ? t('login.logIn') : t('login.signUp')}
           </button>

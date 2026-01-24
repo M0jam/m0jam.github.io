@@ -37,11 +37,21 @@ export class SteamScanner {
     console.log('Scanning for Steam games...')
     const db = dbManager.getDb()
     
-    // Ensure the local_steam_user account exists
-    db.prepare(`
-      INSERT OR IGNORE INTO accounts (id, platform, username, status)
-      VALUES (?, ?, ?, ?)
-    `).run('local_steam_user', 'steam', 'Local Steam User', 'connected')
+    // Check for an existing real Steam account
+    const existingAccount = db.prepare("SELECT id, username FROM accounts WHERE platform = 'steam' AND id != 'local_steam_user' ORDER BY last_synced DESC LIMIT 1").get() as { id: string, username: string } | undefined
+    
+    let accountId = 'local_steam_user'
+    
+    if (existingAccount) {
+        console.log(`Associating scanned games with Steam account: ${existingAccount.username} (${existingAccount.id})`)
+        accountId = existingAccount.id
+    } else {
+        // Ensure the local_steam_user account exists if we don't have a real one
+        db.prepare(`
+          INSERT OR IGNORE INTO accounts (id, platform, username, status)
+          VALUES (?, ?, ?, ?)
+        `).run('local_steam_user', 'steam', 'Local Steam User', 'connected')
+    }
 
     const steamPaths = this.detectSteamPaths()
     
@@ -90,16 +100,18 @@ export class SteamScanner {
                                 is_installed = 1,
                                 install_path = excluded.install_path,
                                 box_art_url = excluded.box_art_url,
-                                background_url = excluded.background_url
+                                background_url = excluded.background_url,
+                                account_id = ?
                         `).run(
                             gameId, 
                             appId, 
-                            'local_steam_user', // Placeholder account
+                            accountId, 
                             name, 
                             name.toLowerCase(), 
                             join(steamAppsPath, 'common', installDir),
                             boxArtUrl,
-                            backgroundUrl
+                            backgroundUrl,
+                            accountId // Update account_id on conflict too
                         )
                         foundGames++
                     }

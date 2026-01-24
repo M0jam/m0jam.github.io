@@ -32,6 +32,7 @@
         letter-spacing: -0.05em;
         background: linear-gradient(to right, #3b82f6, #10b981); /* blue-500 to emerald-500 */
         -webkit-background-clip: text;
+        background-clip: text;
         -webkit-text-fill-color: transparent;
       }
 
@@ -90,10 +91,19 @@
     <div class="version" id="version">v1.0.0</div>
 
     <script>
-        // Set version if available via URL params or just leave static for now
-        // const urlParams = new URLSearchParams(window.location.search);
-        // const version = urlParams.get('version');
-        // if (version) document.getElementById('version').textContent = 'v' + version;
+        try {
+            const urlParams = new URLSearchParams(window.location.search);
+            const version = urlParams.get('version');
+            if (version) {
+                document.getElementById('version').textContent = 'v' + version;
+            } else {
+                // Fallback attempt to get version if not in params (unlikely in this setup)
+                document.getElementById('version').textContent = 'v' + (window.process?.env?.npm_package_version || '1.0.0');
+            }
+        } catch (e) {
+            console.error('Failed to get version', e);
+            document.getElementById('version').textContent = 'PlayHub';
+        }
     </script>
   </body>
 </html>

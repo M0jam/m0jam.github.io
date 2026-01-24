@@ -1,7 +1,15 @@
-import { app, shell, BrowserWindow, ipcMain, dialog } from 'electron'
+import { app, shell, BrowserWindow, ipcMain, dialog, Tray, Menu, nativeImage } from 'electron'
 import * as dotenv from 'dotenv'
-dotenv.config()
-import { join } from 'path'
+import { join, dirname } from 'path'
+
+// Load environment variables
+if (app.isPackaged) {
+  // In production, try to load .env from the executable directory
+  dotenv.config({ path: join(dirname(app.getPath('exe')), '.env') })
+} else {
+  dotenv.config()
+}
+
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { dbManager } from './database'
 import './services/auth-service'
@@ -13,11 +21,22 @@ import './services/social-service'
 import './services/playtime-monitor'
 import './services/steam-service'
 import './services/epic-service'
+import './services/gog-service'
 import './services/feedback-service'
 import './services/system-service'
 
 import './services/update-service'
+import './services/tag-service'
+import './services/notes-service'
 import { metadataService } from './services/metadata-service'
+
+let tray: Tray | null = null
+let isQuitting = false
+let minimizeToTray = true // Default behavior
+
+app.on('before-quit', () => {
+  isQuitting = true
+})
 
 // Handle file dialog requests
 ipcMain.handle('dialog:open-file', async (_, filters: Electron.FileFilter[]) => {
@@ -30,6 +49,50 @@ ipcMain.handle('dialog:open-file', async (_, filters: Electron.FileFilter[]) => 
   }
   return filePaths[0]
 })
+
+// Listen for tray behavior settings
+ipcMain.on('settings:update-tray-behavior', (_, value) => {
+  minimizeToTray = value
+})
+
+function createTray(iconPath: string, mainWindow: BrowserWindow) {
+  const icon = nativeImage.createFromPath(iconPath)
+  tray = new Tray(icon)
+  tray.setToolTip('PlayHub')
+  
+  const contextMenu = Menu.buildFromTemplate([
+    { 
+      label: 'Open PlayHub', 
+      click: () => {
+        mainWindow.show()
+        mainWindow.focus()
+      } 
+    },
+    { type: 'separator' },
+    { 
+      label: 'Quit', 
+      click: () => {
+        isQuitting = true
+        app.quit()
+      } 
+    }
+  ])
+  
+  tray.setContextMenu(contextMenu)
+  
+  tray.on('click', () => {
+    if (mainWindow.isVisible()) {
+        if (mainWindow.isFocused()) {
+            mainWindow.hide()
+        } else {
+            mainWindow.focus()
+        }
+    } else {
+        mainWindow.show()
+        mainWindow.focus()
+    }
+  })
+}
 
 function createWindow(): void {
   const iconPath =
@@ -54,9 +117,9 @@ function createWindow(): void {
   })
 
   if (is.dev && process.env['ELECTRON_RENDERER_URL']) {
-    splashWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/splash.html`)
+    splashWindow.loadURL(`${process.env['ELECTRON_RENDERER_URL']}/splash.html?version=${app.getVersion()}`)
   } else {
-    splashWindow.loadFile(join(__dirname, '../renderer/splash.html'))
+    splashWindow.loadFile(join(__dirname, '../renderer/splash.html'), { query: { version: app.getVersion() } })
   }
 
   // Create the browser window.
@@ -72,19 +135,37 @@ function createWindow(): void {
     }
   })
 
-  const startTime = Date.now()
-  mainWindow.once('ready-to-show', () => {
-    const elapsed = Date.now() - startTime
-    const minSplashTime = 2000 // 2 seconds minimum
-    const delay = Math.max(0, minSplashTime - elapsed)
+  // Initialize Tray
+  createTray(iconPath, mainWindow)
 
-    setTimeout(() => {
-        if (!splashWindow.isDestroyed()) {
-            splashWindow.close()
-        }
-        mainWindow.show()
-        mainWindow.focus()
-    }, delay)
+  // Listen for app initialization
+  ipcMain.on('app:initialized', () => {
+    if (mainWindow && !mainWindow.isVisible()) {
+      mainWindow.show()
+      mainWindow.focus()
+      // Close splash screen if it exists
+      if (!splashWindow.isDestroyed()) {
+        splashWindow.close()
+      }
+    }
+  })
+
+  mainWindow.on('ready-to-show', () => {
+    // Wait for renderer to signal initialization
+    // mainWindow.show() 
+  })
+
+  // Also keep a fallback just in case renderer fails to signal
+  // (Optional: removed to strictly enforce "only show after init")
+  
+  // Handle Close behavior
+  mainWindow.on('close', (event) => {
+    if (!isQuitting && minimizeToTray) {
+      event.preventDefault()
+      mainWindow.hide()
+      return false
+    }
+    return true
   })
 
   mainWindow.webContents.setWindowOpenHandler((details) => {

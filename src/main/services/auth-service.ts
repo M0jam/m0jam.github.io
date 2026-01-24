@@ -2,8 +2,11 @@ import { dbManager } from '../database'
 import { ipcMain } from 'electron'
 import crypto from 'crypto'
 import { encryptToHex, decryptFromHex } from '../utils/secure-store'
+import { emailService } from './email-service'
 
 export class AuthService {
+  private disconnectCodes = new Map<string, { code: string; expiresAt: number; attempts: number }>()
+
   constructor() {
     this.registerHandlers()
   }
@@ -34,8 +37,12 @@ export class AuthService {
       return this.updateProfile(payload)
     })
 
-    ipcMain.handle('auth:disconnect-account', async (_, payload) => {
-      return this.disconnectAccount(payload)
+    ipcMain.handle('auth:initiate-disconnect', async (_, { userId }) => {
+      return this.initiateDisconnect(userId)
+    })
+
+    ipcMain.handle('auth:verify-disconnect', async (_, { userId, code }) => {
+      return this.verifyDisconnect(userId, code)
     })
   }
 
@@ -60,19 +67,57 @@ export class AuthService {
     const db = dbManager.getDb()
     const id = crypto.randomUUID()
     const passwordHash = await this.hashPassword(password)
+    
+    // Ensure unique username
+    const uniqueUsername = this.getUniqueUsername(username)
 
     try {
       db.prepare('INSERT INTO users (id, email, password_hash, username) VALUES (?, ?, ?, ?)')
-        .run(id, email, passwordHash, username)
+        .run(id, email, passwordHash, uniqueUsername)
       
+      // Send welcome email to the new user
+      await emailService.sendWelcomeEmail(uniqueUsername, email)
+
       const session = this.createSession(id)
-      return { user: { id, email, username, avatar_url: null }, token: session.token }
+      return { user: { id, email, username: uniqueUsername, avatar_url: null }, token: session.token }
     } catch (e: any) {
       if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') {
         throw new Error('Email already exists')
       }
       throw e
     }
+  }
+
+  private getUniqueUsername(username: string, excludeUserId?: string): string {
+    const db = dbManager.getDb()
+    let candidate = username
+    let attempts = 0
+    const maxAttempts = 10
+
+    while (attempts < maxAttempts) {
+      // Check if candidate exists
+      let stmt = 'SELECT id FROM users WHERE username = ?'
+      const params: any[] = [candidate]
+      
+      if (excludeUserId) {
+        stmt += ' AND id != ?'
+        params.push(excludeUserId)
+      }
+
+      const existing = db.prepare(stmt).get(...params)
+      
+      if (!existing) {
+        return candidate
+      }
+
+      // Generate random 4-digit number
+      const suffix = Math.floor(1000 + Math.random() * 9000) // 1000-9999
+      candidate = `${username}#${suffix}`
+      attempts++
+    }
+    
+    // Fallback if super unlucky
+    return `${username}#${Date.now().toString().slice(-4)}`
   }
 
   private async hashPassword(password: string) {
@@ -179,9 +224,13 @@ export class AuthService {
     if (diffMs < minInterval) {
       throw new Error('Username was changed recently')
     }
+    
+    // Ensure unique username
+    const uniqueUsername = this.getUniqueUsername(newUsername, userId)
+
     try {
       db.prepare('UPDATE users SET username = ?, username_updated_at = ? WHERE id = ?').run(
-        newUsername,
+        uniqueUsername,
         now.toISOString(),
         userId
       )
@@ -194,7 +243,7 @@ export class AuthService {
     const user = db
       .prepare('SELECT id, email, username, avatar_url FROM users WHERE id = ?')
       .get(userId) as any
-    this.logProfileChange(userId, 'username', existing.username, newUsername)
+    this.logProfileChange(userId, 'username', existing.username, uniqueUsername)
     db.prepare('UPDATE users SET profile_last_updated_at = ? WHERE id = ?').run(now.toISOString(), userId)
     return user
   }
@@ -290,7 +339,7 @@ export class AuthService {
 
     if (displayName !== undefined && displayName !== user.username) {
       this.validateDisplayName(displayName)
-      newName = displayName.trim()
+      newName = this.getUniqueUsername(displayName.trim(), userId)
     }
 
     if (email !== undefined && email !== user.email) {
@@ -333,10 +382,46 @@ export class AuthService {
     return updated
   }
 
-  private async disconnectAccount(payload: { userId: string; currentPassword: string }) {
-    const { userId, currentPassword } = payload
-    await this.verifyUserPassword(userId, currentPassword)
+  private async initiateDisconnect(userId: string) {
+    const db = dbManager.getDb()
+    const user = db.prepare('SELECT email, username FROM users WHERE id = ?').get(userId) as any
+    if (!user) throw new Error('User not found')
 
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = Date.now() + 10 * 60 * 1000 // 10 minutes
+
+    this.disconnectCodes.set(userId, { code, expiresAt, attempts: 0 })
+
+    await emailService.sendDisconnectCode(user.username, user.email, code)
+    return { success: true, email: user.email }
+  }
+
+  private async verifyDisconnect(userId: string, code: string) {
+    const record = this.disconnectCodes.get(userId)
+    if (!record) throw new Error('No disconnect request found')
+
+    if (Date.now() > record.expiresAt) {
+      this.disconnectCodes.delete(userId)
+      throw new Error('Code expired')
+    }
+
+    if (record.attempts >= 3) {
+      this.disconnectCodes.delete(userId)
+      throw new Error('Too many failed attempts')
+    }
+
+    if (record.code !== code) {
+      record.attempts++
+      this.disconnectCodes.set(userId, record)
+      throw new Error('Invalid code')
+    }
+
+    this.disconnectCodes.delete(userId)
+    
+    return this.performDisconnect(userId)
+  }
+
+  private async performDisconnect(userId: string) {
     const db = dbManager.getDb()
     const user = db
       .prepare('SELECT id, email, username FROM users WHERE id = ?')

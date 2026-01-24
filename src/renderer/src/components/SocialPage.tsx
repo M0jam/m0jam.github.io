@@ -267,7 +267,7 @@ export function SocialPage({
                   })
                 }
                 disabled={isPresenceLoading}
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary-500"
               >
                 <option value="online">{t('social.presence.presenceOnline')}</option>
                 <option value="away">{t('social.presence.presenceAway')}</option>
@@ -292,7 +292,7 @@ export function SocialPage({
                   })
                 }
                 disabled={isPresenceLoading}
-                className="flex-1 bg-slate-950 border border-slate-800 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
+                className="flex-1 bg-slate-950 border border-slate-800 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary-500"
               >
                 <option value="open_for_coop">{t('social.presence.intentOpenForCoop')}</option>
                 <option value="looking_for_party">{t('social.presence.intentLookingForParty')}</option>
@@ -327,7 +327,7 @@ export function SocialPage({
                 }
                 disabled={isPresenceLoading}
                 placeholder={t('social.presence.intentCustom')}
-                className="w-full bg-slate-950 border border-slate-800 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
+                className="w-full bg-slate-950 border border-slate-800 rounded-md px-2 py-1 text-xs focus:outline-none focus:border-primary-500"
               />
             )}
             {intentSummary() && (
@@ -345,11 +345,11 @@ export function SocialPage({
                         placeholder={t('social.localUsernamePlaceholder')} 
                         value={newFriendName}
                         onChange={(e) => setNewFriendName(e.target.value)}
-                        className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm focus:outline-none focus:border-blue-500"
+                        className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-sm focus:outline-none focus:border-primary-500"
                         autoFocus
                     />
                     <div className="flex gap-2">
-                        <button type="submit" className="flex-1 bg-blue-600 hover:bg-blue-500 text-xs py-1 rounded text-white font-medium">
+                        <button type="submit" className="flex-1 bg-primary-600 hover:bg-primary-500 text-xs py-1 rounded text-white font-medium">
                           {t('social.addLocalButton')}
                         </button>
                         <button type="button" onClick={openSteamFriends} className="flex-1 bg-[#171a21] hover:bg-[#2a475e] text-xs py-1 rounded text-white font-medium flex items-center justify-center gap-1">
@@ -367,7 +367,7 @@ export function SocialPage({
                 placeholder={t('social.searchFriendsPlaceholder')} 
                 value={friendSearch}
                 onChange={(e) => setFriendSearch(e.target.value)}
-                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-blue-500 transition-colors"
+                className="w-full bg-slate-900 border border-slate-800 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:border-primary-500 transition-colors"
             />
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="absolute right-3 top-2.5 text-slate-500"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
           </div>
@@ -385,7 +385,7 @@ export function SocialPage({
                         onClick={() => onSelectFriend(friend.id)}
                         className={clsx(
                             "w-full flex items-center gap-3 p-2 rounded-lg transition-colors text-left group",
-                            selectedFriendId === friend.id ? "bg-blue-600/10 border border-blue-500/30" : "hover:bg-slate-800 border border-transparent"
+                            selectedFriendId === friend.id ? "bg-primary-600/10 border border-primary-500/30" : "hover:bg-slate-800 border border-transparent"
                         )}
                     >
                         <div className="relative">
@@ -408,7 +408,7 @@ export function SocialPage({
                             )} />
                         </div>
                         <div className="flex-1 min-w-0">
-                            <div className={clsx("text-sm font-medium truncate", selectedFriendId === friend.id ? "text-blue-400" : "text-slate-200")}>
+                            <div className={clsx("text-sm font-medium truncate", selectedFriendId === friend.id ? "text-primary-400" : "text-slate-200")}>
                                 {friend.username}
                             </div>
                             <div className="text-xs text-slate-500 truncate">
@@ -498,14 +498,14 @@ export function SocialPage({
                                         className={clsx(
                                             "max-w-[70%] px-4 py-2 rounded-2xl text-sm leading-relaxed relative group",
                                             msg.direction === 'outgoing' 
-                                                ? "bg-blue-600 text-white rounded-br-none" 
+                                                ? "bg-primary-600 text-white rounded-br-none" 
                                                 : "bg-slate-800 text-slate-200 rounded-bl-none"
                                         )}
                                     >
                                         {msg.body}
                                         <div className={clsx(
                                             "text-[10px] mt-1 opacity-50",
-                                            msg.direction === 'outgoing' ? "text-blue-200 text-right" : "text-slate-400"
+                                            msg.direction === 'outgoing' ? "text-primary-200 text-right" : "text-slate-400"
                                         )}>
                                             {new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
                                         </div>
@@ -531,15 +531,16 @@ export function SocialPage({
                             value={messageInput}
                             onChange={(e) => setMessageInput(e.target.value)}
                             placeholder={t('social.messagePlaceholder', { name: selectedFriend.username })}
-                            className="flex-1 bg-slate-950 border border-slate-800 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all placeholder:text-slate-600"
+                            className="flex-1 bg-slate-950 border border-slate-800 rounded-full px-4 py-2.5 text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-all placeholder:text-slate-600"
+                            disabled={isSendingMessage}
                         />
                         <button 
                             type="submit" 
                             disabled={!messageInput.trim() || isSendingMessage}
                             className={clsx(
-                                "p-2 rounded-full transition-all",
+                                "p-2.5 rounded-full transition-all flex-shrink-0",
                                 messageInput.trim() && !isSendingMessage
-                                    ? "bg-blue-600 text-white hover:bg-blue-500 shadow-lg shadow-blue-900/20" 
+                                    ? "bg-primary-600 text-white hover:bg-primary-500 shadow-lg shadow-primary-900/20" 
                                     : "bg-slate-800 text-slate-500 cursor-not-allowed"
                             )}
                         >
@@ -555,7 +556,7 @@ export function SocialPage({
                                         electron.shell.openExternal(`steam://friends/message/${selectedFriend.external_id}`)
                                     }
                                 }}
-                                className="text-xs bg-[#171a21] hover:bg-[#2a475e] text-blue-300 px-3 py-1.5 rounded-full flex items-center gap-2 border border-blue-900/30 transition-colors"
+                                className="text-xs bg-[#171a21] hover:bg-[#2a475e] text-primary-300 px-3 py-1.5 rounded-full flex items-center gap-2 border border-primary-900/30 transition-colors"
                             >
                                 <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
                                 {t('social.openSteamChat')}

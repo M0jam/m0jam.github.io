@@ -77,6 +77,13 @@ export class DatabaseManager {
         PRIMARY KEY (game_id, tag_id)
       );
 
+      CREATE TABLE IF NOT EXISTS game_notes (
+        game_id TEXT PRIMARY KEY,
+        content TEXT,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(game_id) REFERENCES games(id)
+      );
+
       CREATE TABLE IF NOT EXISTS messages (
         id TEXT PRIMARY KEY,
         owner_id TEXT NOT NULL,
@@ -221,6 +228,11 @@ export class DatabaseManager {
       this.db.prepare("ALTER TABLE games ADD COLUMN hltb_main REAL").run();
       this.db.prepare("ALTER TABLE games ADD COLUMN hltb_extra REAL").run();
       this.db.prepare("ALTER TABLE games ADD COLUMN hltb_completionist REAL").run();
+    } catch (error) {
+    }
+    try {
+      this.db.prepare("ALTER TABLE games ADD COLUMN playtime_seconds INTEGER DEFAULT 0").run();
+      this.db.prepare("ALTER TABLE games ADD COLUMN last_played DATETIME").run();
     } catch (error) {
     }
   }

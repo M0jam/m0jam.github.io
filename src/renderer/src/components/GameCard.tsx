@@ -52,7 +52,7 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
         onClick={() => onClick(game.id)}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        className="aspect-[2/3] w-full mx-auto bg-slate-900 rounded-xl cursor-pointer border border-white/5 shadow-lg relative overflow-hidden group transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_0_25px_rgba(59,130,246,0.3)] hover:border-blue-500/30"
+        className="aspect-[2/3] w-full mx-auto bg-slate-900 rounded-xl cursor-pointer border border-white/5 shadow-lg relative overflow-hidden group transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_0_25px_rgba(var(--color-primary-500),0.3)] hover:border-primary-500/30"
     >
       {/* Sheen effect */}
       <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
@@ -110,7 +110,7 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
            </button>
 
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform scale-0 group-hover:scale-100 transition-transform duration-300">
-            <div className="w-12 h-12 rounded-full bg-blue-600/90 text-white flex items-center justify-center shadow-lg shadow-blue-600/40 backdrop-blur-sm">
+            <div className="w-12 h-12 rounded-full bg-primary-600/90 text-white flex items-center justify-center shadow-lg shadow-primary-600/40 backdrop-blur-sm">
                 <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="currentColor" className="ml-1">
                     <path d="M8 5v14l11-7z"/>
                 </svg>

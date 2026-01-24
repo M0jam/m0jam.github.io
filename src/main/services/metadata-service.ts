@@ -164,90 +164,97 @@ export class MetadataService {
   }
 
   public async fetchMissingMetadata(force = false) {
+    const startTime = performance.now()
     let updatedCount = 0
     const db = dbManager.getDb()
 
-    // 1. Fetch HLTB for all games missing it (or force all)
+    // 1. Fetch HLTB for all games missing it (Concurrent)
     try {
         const games = db.prepare(`
             SELECT id, title FROM games 
             WHERE hltb_main IS NULL ${force ? '' : ''}
         `).all() as { id: string, title: string }[]
 
-        for (const game of games) {
-            // Rate limit HLTB slightly
-            await new Promise(resolve => setTimeout(resolve, 500))
-            const updated = await hltbService.updateGame(game.id, game.title)
-            if (updated) updatedCount++
+        // Process in chunks of 5 concurrently
+        const chunkSize = 5
+        for (let i = 0; i < games.length; i += chunkSize) {
+            const batch = games.slice(i, i + chunkSize)
+            await Promise.all(batch.map(async (game) => {
+                try {
+                    const updated = await hltbService.updateGame(game.id, game.title)
+                    if (updated) updatedCount++
+                } catch (e) { 
+                    log.warn(`HLTB update failed for ${game.title}:`, e)
+                }
+            }))
+            // Minimal delay to prevent flooding
+            await new Promise(resolve => setTimeout(resolve, 100))
         }
     } catch (e) {
         log.error('HLTB Batch sync failed:', e)
     }
 
-    // 2. Fetch Rich Metadata (Steam or IGDB)
+    // 2. Fetch Rich Metadata (Steam - Batched)
     try {
-      // Find games with missing summary/details
+      // Find Steam games with missing summary
       const games = db.prepare(`
         SELECT id, title, platform_game_id FROM games 
-        WHERE summary IS NULL OR summary = '' ${force ? '' : ''}
+        WHERE (summary IS NULL OR summary = '') AND id LIKE 'steam_%' ${force ? '' : ''}
       `).all() as { id: string, title: string, platform_game_id: string }[]
 
-      for (const game of games) {
-        // A. Steam Strategy (No Auth needed)
-        if (game.id.startsWith('steam_')) {
-             const appId = game.platform_game_id
-             try {
-                const res = await axios.get(`https://store.steampowered.com/api/appdetails?appids=${appId}&l=english`)
-                if (res.data && res.data[appId] && res.data[appId].success) {
-                    const data = res.data[appId].data
-                    const genres = data.genres ? JSON.stringify(data.genres.map((g: any) => g.description)) : '[]'
-                    const releaseDate = data.release_date ? data.release_date.date : null
-                    const summary = data.short_description || data.about_the_game
-                    
-                    db.prepare(`
-                        UPDATE games 
-                        SET summary = ?, genres = ?, release_date = ?, rating = ?
-                        WHERE id = ?
-                    `).run(summary, genres, releaseDate, 0, game.id) // Steam doesn't give simple 0-100 rating easily in this API
-                    updatedCount++
-                    continue // Skip IGDB if Steam worked
+      // Chunk into batches of 25 for Steam API
+      const BATCH_SIZE = 25
+      for (let i = 0; i < games.length; i += BATCH_SIZE) {
+        const batch = games.slice(i, i + BATCH_SIZE)
+        const appIds = batch.map(g => g.platform_game_id).join(',')
+
+        try {
+            const res = await axios.get(`https://store.steampowered.com/api/appdetails?appids=${appIds}&l=english&cc=US`, {
+                timeout: 5000 // 5s timeout
+            })
+            
+            if (res.data) {
+                const transaction = db.transaction((updates: any[]) => {
+                    for (const u of updates) {
+                        db.prepare(`
+                            UPDATE games 
+                            SET summary = ?, genres = ?, release_date = ?, rating = ?, box_art_url = COALESCE(box_art_url, ?)
+                            WHERE id = ?
+                        `).run(u.summary, u.genres, u.release_date, u.rating, u.cover, u.id)
+                    }
+                })
+
+                const updatesToRun: any[] = []
+
+                for (const game of batch) {
+                    const details = res.data[game.platform_game_id]
+                    if (details && details.success && details.data) {
+                        const d = details.data
+                        updatesToRun.push({
+                            id: game.id,
+                            summary: d.short_description,
+                            genres: d.genres ? d.genres.map((g: any) => g.description).join(', ') : '',
+                            release_date: d.release_date ? d.release_date.date : '',
+                            rating: d.metacritic ? d.metacritic.score : null,
+                            cover: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${game.platform_game_id}/library_600x900.jpg`
+                        })
+                        updatedCount++
+                    }
                 }
-             } catch (err) {
-                 log.warn(`Steam metadata fetch failed for ${game.title}`, err)
-             }
+
+                if (updatesToRun.length > 0) transaction(updatesToRun)
+            }
+        } catch (err) {
+            log.error('Batch steam fetch failed:', err)
         }
 
-        // B. IGDB Strategy (Auth needed)
-        if (!this.accessToken) {
-            await this.loadCredentials()
-        }
-        
-        if (this.accessToken) {
-            // Clean title for better search (remove trademark symbols, edition names etc if needed)
-            const results = await this.searchGame(game.title)
-            
-            if (results.length > 0) {
-            // Pick the best match
-            const match = results[0]
-            
-            // Update DB
-            const genres = match.genres ? JSON.stringify(match.genres.map(g => g.name)) : '[]'
-            const releaseDate = match.first_release_date ? new Date(match.first_release_date * 1000).toISOString() : null
-            
-            db.prepare(`
-                UPDATE games 
-                SET summary = ?, genres = ?, release_date = ?, rating = ?, box_art_url = COALESCE(box_art_url, ?)
-                WHERE id = ?
-            `).run(match.summary, genres, releaseDate, match.rating || null, match.cover?.url || null, game.id)
-            updatedCount++
-            }
-            
-            // Wait to be nice to the API
-            await new Promise(resolve => setTimeout(resolve, 300))
-        }
+        // Rate limit: 25 games per 500ms = 50 games/sec (Safe for Steam)
+        await new Promise(resolve => setTimeout(resolve, 500))
       }
 
-      return { success: true, count: updatedCount, message: `Updated metadata for ${updatedCount} games.` }
+      const duration = ((performance.now() - startTime) / 1000).toFixed(2)
+      log.info(`Metadata Sync completed in ${duration}s. Updated ${updatedCount} games.`)
+      return { success: true, count: updatedCount, message: `Updated metadata for ${updatedCount} games in ${duration}s.` }
     } catch (error) {
       log.error('Fetch metadata failed:', error)
       return { success: false, message: 'Failed to fetch metadata' }

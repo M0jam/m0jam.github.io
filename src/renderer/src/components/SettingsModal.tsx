@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { electron } from '../utils/electron'
 import { useTheme } from '../context/ThemeContext'
 import { useTranslation } from 'react-i18next'
+import { BackgroundKey } from '@renderer/utils/theme'
 
 const DISCORD_INVITE_URL: string | undefined =
   typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_DISCORD_INVITE_URL
@@ -26,10 +27,20 @@ interface SettingsModalProps {
   onLogout: () => void
   onUserUpdated: (user: any) => void
   onDisconnected: () => void
+  onResetOnboarding?: () => void
 }
 
-export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, onDisconnected }: SettingsModalProps) {
-  const { theme, toggleTheme } = useTheme()
+export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, onDisconnected, onResetOnboarding }: SettingsModalProps) {
+  const { 
+    theme, 
+    toggleTheme, 
+    colorTheme, 
+    setColorTheme, 
+    availableThemes, 
+    backgroundTheme, 
+    setBackgroundTheme, 
+    availableBackgrounds 
+  } = useTheme()
   const { t, i18n } = useTranslation()
   const [activeTab, setActiveTab] = useState('account') // account, integrations, general
   const [steamPath, setSteamPath] = useState('C:\\Program Files (x86)\\Steam')
@@ -66,6 +77,13 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
   const [hasUnreadChangelogFlag, setHasUnreadChangelogFlag] = useState(false)
   const [currentVersion, setCurrentVersion] = useState<string | null>(null)
   const [isSteamDisconnecting, setIsSteamDisconnecting] = useState(false)
+  
+  // Disconnect Flow State
+  const [disconnectStep, setDisconnectStep] = useState<'idle' | 'confirm' | 'verify'>('idle')
+  const [disconnectCode, setDisconnectCode] = useState('')
+  const [maskedEmail, setMaskedEmail] = useState('')
+  const [isSendingCode, setIsSendingCode] = useState(false)
+  const [isVerifyingCode, setIsVerifyingCode] = useState(false)
   const [syncPercent, setSyncPercent] = useState(0)
   const [steamApiKey, setSteamApiKey] = useState('')
   const [showApiKeyInput, setShowApiKeyInput] = useState(false)
@@ -76,6 +94,13 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
   const [remindDays, setRemindDays] = useState(3)
   const [shouldAutoInstall, setShouldAutoInstall] = useState(false)
   const [isEpicDisconnecting, setIsEpicDisconnecting] = useState(false)
+  const [gogId, setGogId] = useState<string | null>(null)
+  const [gogDisplayName, setGogDisplayName] = useState<string | null>(null)
+  const [isGogConnecting, setIsGogConnecting] = useState(false)
+  const [isGogSyncing, setIsGogSyncing] = useState(false)
+  const [gogStatusMessage, setGogStatusMessage] = useState('')
+  const [gogSyncStatus, setGogSyncStatus] = useState('')
+  const [isGogDisconnecting, setIsGogDisconnecting] = useState(false)
   const [feedbackForm, setFeedbackForm] = useState({
     type: 'bug',
     content: '',
@@ -96,6 +121,20 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
     if (stored === 'true') return true
     return true
   })
+  const [minimizeToTray, setMinimizeToTray] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return true
+    const stored = window.localStorage.getItem('playhub:minimizeToTray')
+    if (stored === 'false') return false
+    return true
+  })
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('playhub:minimizeToTray', minimizeToTray ? 'true' : 'false')
+      electron.ipcRenderer.send('settings:update-tray-behavior', minimizeToTray)
+    }
+  }, [minimizeToTray])
+
   const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false)
   const [feedbackStatus, setFeedbackStatus] = useState('')
 
@@ -249,6 +288,28 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
       })
       .catch(() => {
         setEpicStatusMessage('Could not load Epic Games connection status')
+      })
+  }, [isOpen])
+
+  useEffect(() => {
+    if (!isOpen) return
+
+    electron.ipcRenderer
+      .invoke('gog:get-status')
+      .then((status: any) => {
+        if (status?.connected) {
+          setGogId(status.gogId)
+          setGogDisplayName(status.displayName || null)
+          setGogStatusMessage(t('settings.integrations.connectedMessage', { platform: 'GOG Galaxy' }))
+        } else {
+          setGogId(null)
+          setGogDisplayName(null)
+          setGogStatusMessage('')
+          setGogSyncStatus('')
+        }
+      })
+      .catch(() => {
+        setGogStatusMessage('Could not load GOG connection status')
       })
   }, [isOpen])
 
@@ -575,6 +636,68 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
     }
   }
 
+  const handleGogConnect = async () => {
+    setIsGogConnecting(true)
+    setGogStatusMessage('')
+    try {
+      const result = await electron.ipcRenderer.invoke('gog:auth')
+      if (result.success) {
+        setGogId(result.gogId)
+        setGogDisplayName(result.displayName || result.gogId)
+        setGogStatusMessage(t('settings.integrations.connectedMessage', { platform: 'GOG' }))
+      } else {
+        setGogStatusMessage('Connection failed: ' + result.error)
+      }
+    } catch (e) {
+      setGogStatusMessage('Connection error')
+    } finally {
+      setIsGogConnecting(false)
+    }
+  }
+
+  const handleGogSync = async () => {
+    if (!gogId) {
+      setGogSyncStatus('Please connect GOG account first')
+      return
+    }
+    setIsGogSyncing(true)
+    setGogSyncStatus('Syncing...')
+    try {
+      const result = await electron.ipcRenderer.invoke('gog:sync', { gogId })
+      if (result?.success) {
+        const count = typeof result.totalSynced === 'number' ? result.totalSynced : 0
+        setGogSyncStatus(`Synced ${count} GOG games`)
+      } else {
+        setGogSyncStatus('Sync failed: ' + (result?.error || 'Unknown error'))
+      }
+    } catch {
+      setGogSyncStatus('Sync error')
+    } finally {
+      setIsGogSyncing(false)
+    }
+  }
+
+  const handleGogDisconnect = async () => {
+    if (!gogId) return
+    setIsGogDisconnecting(true)
+    setGogSyncStatus('')
+    setGogStatusMessage('')
+    try {
+      const result = await electron.ipcRenderer.invoke('gog:disconnect')
+      if (result?.success) {
+        setGogId(null)
+        setGogDisplayName(null)
+        setGogSyncStatus('Disconnected from GOG')
+      } else {
+        setGogSyncStatus('Could not disconnect from GOG')
+      }
+    } catch {
+      setGogSyncStatus('Could not disconnect from GOG')
+    } finally {
+      setIsGogDisconnecting(false)
+    }
+  }
+
   const hasProfileChanges =
     displayName !== user.username ||
     email !== user.email ||
@@ -602,7 +725,11 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
       const updated = await electron.ipcRenderer.invoke('auth:update-profile', payload)
       if (updated) {
         onUserUpdated(updated)
-        setProfileStatus(t('settings.messages.profileUpdated'))
+        if (updated.username !== displayName.trim()) {
+            setProfileStatus(t('settings.messages.usernameChanged', { newName: updated.username }))
+        } else {
+            setProfileStatus(t('settings.messages.profileUpdated'))
+        }
         setCurrentPassword('')
         setShowPasswordField(false)
       }
@@ -629,23 +756,41 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
     reader.readAsDataURL(file)
   }
 
-  const handleDisconnectAccount = async () => {
+  const handleInitiateDisconnect = async () => {
     setProfileError('')
-    if (!currentPassword) {
-      setProfileError(t('settings.messages.disconnectPasswordRequired'))
+    setIsSendingCode(true)
+    try {
+      const result = await electron.ipcRenderer.invoke('auth:initiate-disconnect', {
+        userId: user.id
+      })
+      if (result.success) {
+        setMaskedEmail(result.email.replace(/^(.{2})(.*)(@.*)$/, '$1***$3'))
+        setDisconnectStep('verify')
+      }
+    } catch (err: any) {
+      setProfileError(err.message || t('settings.messages.initiateDisconnectFailed'))
+    } finally {
+      setIsSendingCode(false)
+    }
+  }
+
+  const handleVerifyDisconnect = async () => {
+    setProfileError('')
+    if (!disconnectCode || disconnectCode.length !== 6) {
+      setProfileError(t('settings.messages.invalidCode'))
       return
     }
-    setIsDisconnecting(true)
+    setIsVerifyingCode(true)
     try {
-      await electron.ipcRenderer.invoke('auth:disconnect-account', {
+      await electron.ipcRenderer.invoke('auth:verify-disconnect', {
         userId: user.id,
-        currentPassword
+        code: disconnectCode
       })
       onDisconnected()
     } catch (err: any) {
       setProfileError(err.message || t('settings.messages.disconnectAccountFailed'))
     } finally {
-      setIsDisconnecting(false)
+      setIsVerifyingCode(false)
     }
   }
 
@@ -687,24 +832,24 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
           type="button"
           aria-label="Close settings"
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/80 text-slate-300 hover:text-white hover:border-slate-500 hover:bg-slate-900 active:bg-slate-950 transition-colors shadow-lg shadow-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/80 text-slate-300 hover:text-white hover:border-slate-500 hover:bg-slate-900 active:bg-slate-950 transition-colors shadow-lg shadow-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
         >
           ✕
         </button>
         <div className="w-64 bg-slate-950/50 border-r border-slate-800 p-6 flex flex-col gap-2">
           <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-            <span className="text-blue-500">⚙️</span> {t('settings.sidebar.title')}
+            <span className="text-primary-500">⚙️</span> {t('settings.sidebar.title')}
           </h2>
           
           <button 
             onClick={() => setActiveTab('account')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'account' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'account' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
           >
             {t('settings.sidebar.account')}
           </button>
           <button 
             onClick={() => setActiveTab('integrations')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'integrations' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'integrations' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
           >
             {t('settings.sidebar.integrations')}
           </button>
@@ -718,27 +863,33 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
             }}
             className={clsx(
               'text-left px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-between gap-2',
-              activeTab === 'updates' ? 'bg-blue-600/10 text-blue-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              activeTab === 'updates' ? 'bg-primary-600/10 text-primary-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
             )}
           >
             <span>{t('settings.sidebar.updates')}</span>
-            {hasUnreadChangelogFlag && <span className="w-2 h-2 rounded-full bg-blue-400" />}
+            {hasUnreadChangelogFlag && <span className="w-2 h-2 rounded-full bg-primary-400" />}
+          </button>
+          <button 
+            onClick={() => setActiveTab('appearance')}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'appearance' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+          >
+            {t('settings.sidebar.appearance')}
           </button>
           <button 
             onClick={() => setActiveTab('general')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'general' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'general' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
           >
             {t('settings.sidebar.general')}
           </button>
           <button 
             onClick={() => setActiveTab('feedback')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'feedback' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'feedback' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
           >
             {t('settings.sidebar.feedback')}
           </button>
           <button 
             onClick={() => setActiveTab('system')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'system' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'system' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
           >
             {t('settings.sidebar.system')}
           </button>
@@ -753,7 +904,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
               </header>
 
               <div className="flex items-center gap-6 p-6 bg-slate-800/50 rounded-xl border border-slate-700">
-                <div className="w-20 h-20 rounded-full bg-blue-600 flex items-center justify-center text-3xl font-bold">
+                <div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center text-3xl font-bold">
                   {avatarPreview ? <img src={avatarPreview} className="w-full h-full rounded-full object-cover" /> : user.username[0].toUpperCase()}
                 </div>
                 <div>
@@ -773,7 +924,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       setProfileError('')
                       setProfileStatus('')
                     }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
                   />
                   <div className="text-xs text-slate-500 mt-1">{t('settings.account.displayNameHelp')}</div>
                 </div>
@@ -788,7 +939,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       setProfileError('')
                       setProfileStatus('')
                     }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
                   />
                   <div className="text-xs text-slate-500 mt-1">{t('settings.account.emailHelp')}</div>
                 </div>
@@ -796,7 +947,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                 <div>
                   <div className="text-sm font-medium text-slate-200 mb-1">{t('settings.account.profilePictureLabel')}</div>
                   <div className="flex items-center gap-3">
-                    <label className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-medium cursor-pointer hover:border-blue-500 transition-colors">
+                    <label className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-medium cursor-pointer hover:border-primary-500 transition-colors">
                       {t('settings.account.changeAvatar')}
                       <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                     </label>
@@ -819,7 +970,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
                       placeholder={t('settings.account.confirmPasswordPlaceholder')}
                     />
                   </div>
@@ -833,7 +984,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                   <button
                     disabled={isSavingProfile || !hasProfileChanges}
                     onClick={handleProfileSave}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors flex items-center gap-2"
+                    className="px-4 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors flex items-center gap-2"
                   >
                     {isSavingProfile && (
                       <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
@@ -877,34 +1028,75 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       <p className="text-xs text-slate-400">
                         {t('settings.account.disconnectDeviceDescription')}
                       </p>
-                      {showDisconnectConfirm ? (
-                        <div className="space-y-2">
+                      {disconnectStep === 'verify' ? (
+                        <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                          <div className="text-sm text-slate-300">
+                            {t('settings.account.codeSentTo', { email: maskedEmail })}
+                          </div>
                           <input
-                            type="password"
-                            value={currentPassword}
-                            onChange={(e) => setCurrentPassword(e.target.value)}
-                            className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-red-500"
-                            placeholder={t('settings.account.disconnectPasswordPlaceholder')}
+                            type="text"
+                            value={disconnectCode}
+                            onChange={(e) => setDisconnectCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                            className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-center text-xl tracking-widest text-white focus:outline-none focus:border-red-500 font-mono"
+                            placeholder="000000"
+                            autoFocus
                           />
-                          <div className="flex items-center justify-between">
+                          <div className="flex items-center justify-between gap-3">
                             <button
                               onClick={() => {
-                                setShowDisconnectConfirm(false)
-                                setCurrentPassword('')
+                                setDisconnectStep('idle')
+                                setDisconnectCode('')
+                                setProfileError('')
+                              }}
+                              className="px-3 py-2 text-xs text-slate-400 hover:text-slate-200"
+                            >
+                              {t('addGame.cancel')}
+                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={handleInitiateDisconnect}
+                                    disabled={isSendingCode}
+                                    className="px-3 py-2 text-xs text-slate-400 hover:text-slate-200 disabled:opacity-50"
+                                >
+                                    {isSendingCode ? t('settings.account.sending') : t('settings.account.resendCode')}
+                                </button>
+                                <button
+                                  onClick={handleVerifyDisconnect}
+                                  disabled={isVerifyingCode || disconnectCode.length !== 6}
+                                  className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-lg text-xs font-semibold text-white flex items-center gap-2"
+                                >
+                                  {isVerifyingCode && (
+                                    <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
+                                  )}
+                                  {t('settings.account.verifyAndDisconnect')}
+                                </button>
+                            </div>
+                          </div>
+                        </div>
+                      ) : disconnectStep === 'confirm' ? (
+                        <div className="space-y-3 animate-in fade-in slide-in-from-bottom-2 duration-300">
+                           <div className="p-3 bg-red-500/10 border border-red-500/20 rounded text-xs text-red-200">
+                                {t('settings.account.disconnectWarning')}
+                           </div>
+                           <div className="flex items-center justify-between">
+                            <button
+                              onClick={() => {
+                                setDisconnectStep('idle')
+                                setProfileError('')
                               }}
                               className="px-3 py-2 text-xs text-slate-400 hover:text-slate-200"
                             >
                               {t('addGame.cancel')}
                             </button>
                             <button
-                              onClick={handleDisconnectAccount}
-                              disabled={isDisconnecting}
+                              onClick={handleInitiateDisconnect}
+                              disabled={isSendingCode}
                               className="px-4 py-2 bg-red-600 hover:bg-red-500 disabled:opacity-50 rounded-lg text-xs font-semibold text-white flex items-center gap-2"
                             >
-                              {isDisconnecting && (
+                              {isSendingCode && (
                                 <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
                               )}
-                              {t('settings.account.disconnectAccount')}
+                              {t('settings.account.sendCode')}
                             </button>
                           </div>
                         </div>
@@ -912,7 +1104,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                         <button
                           onClick={() => {
                             setProfileError('')
-                            setShowDisconnectConfirm(true)
+                            setDisconnectStep('confirm')
                           }}
                           className="px-4 py-2 bg-transparent border border-red-500/40 text-xs font-semibold text-red-400 rounded-lg hover:bg-red-500/10 transition-colors"
                         >
@@ -985,7 +1177,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       type="text"
                       value={igdbClientId}
                       onChange={(e) => setIgdbClientId(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:border-primary-500 focus:outline-none"
                       placeholder={t('settings.integrations.igdbClientIdPlaceholder') || 'Client ID'}
                     />
                   </div>
@@ -995,7 +1187,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       type="password"
                       value={igdbClientSecret}
                       onChange={(e) => setIgdbClientSecret(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:border-blue-500 focus:outline-none"
+                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-slate-200 focus:border-primary-500 focus:outline-none"
                       placeholder={t('settings.integrations.igdbClientSecretPlaceholder') || 'Client Secret'}
                     />
                   </div>
@@ -1021,7 +1213,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                     <p className="text-xs text-slate-300 mt-1">{fetchCoverStatus}</p>
                   )}
                   <p className="text-[10px] text-slate-500 mt-2">
-                    {t('settings.integrations.igdbHelp') || 'Get keys from'} <a href="https://dev.twitch.tv/console" target="_blank" rel="noreferrer" className="text-blue-400 hover:underline">Twitch Dev Console</a>.
+                    {t('settings.integrations.igdbHelp') || 'Get keys from'} <a href="https://dev.twitch.tv/console" target="_blank" rel="noreferrer" className="text-primary-400 hover:underline">Twitch Dev Console</a>.
                   </p>
                 </div>
               </div>
@@ -1085,7 +1277,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                                             </label>
                                     <button 
                                         onClick={() => setShowApiKeyInput(!showApiKeyInput)} 
-                                        className="text-xs text-blue-400 hover:text-blue-300"
+                                        className="text-xs text-primary-400 hover:text-primary-300"
                                     >
                                                 {showApiKeyInput
                                                   ? t('settings.integrations.hide')
@@ -1101,7 +1293,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                                                       href="https://steamcommunity.com/dev/apikey"
                                                       target="_blank"
                                                       rel="noreferrer"
-                                                      className="text-blue-400 ml-1 hover:underline"
+                                                      className="text-primary-400 ml-1 hover:underline"
                                                     >
                                                       {t('settings.integrations.steamApiKeyLink')}
                                                     </a>
@@ -1114,12 +1306,12 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                                                 value={steamApiKey}
                                                 onChange={(e) => setSteamApiKey(e.target.value)}
                                                     placeholder={t('settings.integrations.steamApiKeyPlaceholder')}
-                                                className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs focus:outline-none focus:border-blue-500 text-slate-300 placeholder:text-slate-600"
+                                                className="flex-1 bg-slate-950 border border-slate-700 rounded px-3 py-2 text-xs focus:outline-none focus:border-primary-500 text-slate-300 placeholder:text-slate-600"
                                             />
                                             <button 
                                                 onClick={handleSaveApiKey}
                                                 disabled={isSavingKey || !steamApiKey}
-                                                className="px-3 py-1 bg-blue-600 hover:bg-blue-500 text-white text-xs rounded font-medium disabled:opacity-50 transition-colors"
+                                                className="px-3 py-1 bg-primary-600 hover:bg-primary-500 text-white text-xs rounded font-medium disabled:opacity-50 transition-colors"
                                             >
                                                     {isSavingKey
                                                       ? t('settings.integrations.savingKey')
@@ -1137,7 +1329,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                           {isSteamSyncing && (
                             <div className="w-full h-1.5 bg-slate-700 rounded-full overflow-hidden">
                               <div 
-                                className="h-full bg-blue-500 transition-all duration-300 ease-out"
+                                className="h-full bg-primary-500 transition-all duration-300 ease-out"
                                 style={{ width: `${syncPercent}%` }}
                               />
                             </div>
@@ -1147,7 +1339,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                             <button 
                               onClick={handleSteamSync}
                               disabled={isSteamSyncing}
-                              className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                              className="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 flex items-center gap-2"
                             >
                               {isSteamSyncing ? (
                                 <>
@@ -1202,7 +1394,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                                 type="text" 
                                 value={steamPath}
                                 onChange={(e) => setSteamPath(e.target.value)}
-                                className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
+                                className="flex-1 bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm focus:outline-none focus:border-primary-500"
                                 placeholder={t('settings.integrations.customLibraryPathPlaceholder')}
                             />
                         </div>
@@ -1275,7 +1467,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                           <button
                             onClick={handleEpicSync}
                             disabled={isEpicSyncing}
-                            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                            className="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 flex items-center gap-2"
                           >
                             {isEpicSyncing ? (
                               <>
@@ -1305,20 +1497,92 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                   )}
                 </div>
 
-                {/* GOG (Coming Soon) */}
-                <div className="p-6 bg-slate-800/30 rounded-xl border border-slate-800 opacity-75 grayscale hover:grayscale-0 transition-all">
-                  <div className="flex items-center justify-between">
+                {/* GOG */}
+                <div className="p-6 bg-slate-800/50 rounded-xl border border-slate-700">
+                  <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 bg-[#5d2d88] rounded-lg flex items-center justify-center font-bold text-white">G</div>
                       <div>
                         <div className="font-bold text-lg">{t('settings.integrations.gogTitle')}</div>
-                        <div className="text-sm text-slate-500">{t('settings.integrations.comingSoon')}</div>
+                        <div className="text-sm text-slate-400">
+                          {gogId
+                            ? t('settings.integrations.connectedMessage', { platform: 'GOG Galaxy' })
+                            : t('settings.integrations.connectAccountPrompt')}
+                        </div>
                       </div>
                     </div>
-                    <button disabled className="px-4 py-2 bg-slate-800 text-slate-500 rounded-lg font-medium cursor-not-allowed">
-                      {t('settings.integrations.connectButton')}
+                    <button
+                      onClick={handleGogConnect}
+                      disabled={isGogConnecting || !!gogId}
+                      className={clsx(
+                        'px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2',
+                        gogId
+                          ? 'bg-green-600/20 text-green-400'
+                          : 'bg-[#5d2d88] hover:bg-[#4a246d] text-white'
+                      )}
+                    >
+                      {isGogConnecting && (
+                        <span className="inline-block w-4 h-4 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
+                      )}
+                      {gogId
+                        ? t('settings.integrations.connected')
+                        : isGogConnecting
+                        ? t('settings.integrations.connecting')
+                        : t('settings.integrations.connectButton')}
                     </button>
                   </div>
+                  {gogStatusMessage && (
+                    <div className="text-xs text-slate-400 mt-1">
+                      {gogStatusMessage}
+                    </div>
+                  )}
+                  {gogId && (
+                    <div className="mt-4 pt-4 border-t border-slate-700 space-y-4">
+                      <div className="bg-slate-900/50 p-4 rounded-lg border border-slate-700/50">
+                        <div className="flex items-center gap-3 text-sm text-slate-300 mb-2">
+                          <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                          {t('settings.integrations.secureSessionActive')}
+                        </div>
+                        <p className="text-xs text-slate-500">
+                          {t('settings.integrations.gogSecureDescription')}
+                        </p>
+                      </div>
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex flex-col gap-2 flex-1 mr-4">
+                          <div className="text-sm text-slate-400">{gogSyncStatus}</div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={handleGogSync}
+                            disabled={isGogSyncing}
+                            className="px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-sm font-medium text-white transition-colors disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {isGogSyncing ? (
+                              <>
+                                <span className="w-3 h-3 border-2 border-white/30 border-t-white rounded-full animate-spin"></span>
+                                {t('settings.integrations.syncing')}
+                              </>
+                            ) : (
+                              <>
+                                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                                {t('settings.integrations.syncNow')}
+                              </>
+                            )}
+                          </button>
+                          <button
+                            onClick={handleGogDisconnect}
+                            disabled={isGogDisconnecting}
+                            className="px-3 py-2 bg-slate-800 hover:bg-slate-700 rounded-lg text-xs font-medium text-slate-300 border border-slate-600/60 disabled:opacity-50 flex items-center gap-2"
+                          >
+                            {isGogDisconnecting && (
+                              <span className="w-3 h-3 border-2 border-white/30 border-t-transparent rounded-full animate-spin"></span>
+                            )}
+                            {t('settings.integrations.disconnect')}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -1419,7 +1683,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                           }
                         }}
                         disabled={isDownloadingUpdate}
-                        className="px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white flex items-center gap-2"
+                        className="px-4 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 rounded-lg text-sm font-medium text-white flex items-center gap-2"
                       >
                         {isDownloadingUpdate && (
                           <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
@@ -1458,7 +1722,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                     </div>
                     <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
                       <div
-                        className="h-2 bg-blue-500"
+                        className="h-2 bg-primary-500"
                         style={{ width: `${updateState.progress.percent}%` }}
                       />
                     </div>
@@ -1496,7 +1760,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       }}
                       className={clsx(
                         'w-10 h-5 rounded-full relative transition-colors',
-                        updatePrefs.autoCheck ? 'bg-blue-600' : 'bg-slate-700'
+                        updatePrefs.autoCheck ? 'bg-primary-600' : 'bg-slate-700'
                       )}
                     >
                       <span
@@ -1517,8 +1781,8 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                     <div className="text-sm text-slate-400">{t('settings.updates.changelogDescription')}</div>
                   </div>
                   {hasUnreadChangelogFlag && (
-                    <span className="inline-flex items-center gap-1 text-xs text-blue-400">
-                      <span className="w-2 h-2 rounded-full bg-blue-400" />
+                    <span className="inline-flex items-center gap-1 text-xs text-primary-400">
+                      <span className="w-2 h-2 rounded-full bg-primary-400" />
                       {t('settings.updates.newBadge')}
                     </span>
                   )}
@@ -1560,11 +1824,11 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
             </div>
           )}
 
-          {activeTab === 'general' && (
+          {activeTab === 'appearance' && (
             <div className="space-y-8">
               <header>
-                <h3 className="text-2xl font-bold mb-2">{t('settings.generalTitle')}</h3>
-                <p className="text-slate-400">{t('settings.generalDescription')}</p>
+                <h3 className="text-2xl font-bold mb-2">{t('settings.appearance')}</h3>
+                <p className="text-slate-400">{t('settings.appearanceDescription')}</p>
               </header>
               
               <div className="p-6 bg-slate-800/50 rounded-xl border border-slate-700">
@@ -1577,7 +1841,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                      onClick={toggleTheme}
                      className={clsx(
                        "w-12 h-6 rounded-full relative transition-colors focus:outline-none",
-                       theme === 'dark' ? "bg-slate-700" : "bg-blue-500"
+                       theme === 'dark' ? "bg-slate-700" : "bg-primary-500"
                      )}
                    >
                        <div className={clsx(
@@ -1586,6 +1850,75 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                        )}></div>
                    </button>
                 </div>
+
+                <div className="flex items-center justify-between mb-4">
+                   <div>
+                       <div className="font-bold">{t('settings.colorTheme') || 'Color Theme'}</div>
+                       <div className="text-sm text-slate-400">{t('settings.colorThemeDescription') || 'Choose your accent color'}</div>
+                   </div>
+                   <div className="flex gap-2">
+                       {availableThemes && Object.entries(availableThemes).map(([key, themeData]) => (
+                           <button
+                               key={key}
+                               onClick={() => setColorTheme(key as any)}
+                               className={clsx(
+                                   "w-8 h-8 rounded-full border-2 transition-all",
+                                   colorTheme === key ? "border-white scale-110" : "border-transparent hover:scale-105"
+                               )}
+                               style={{ backgroundColor: `rgb(${themeData.colors[500]})` }}
+                               title={themeData.name}
+                           />
+                       ))}
+                   </div>
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-slate-700">
+                    <div className="font-bold mb-3">{t('settings.backgroundTheme')}</div>
+                    <div className="text-sm text-slate-400 mb-4">{t('settings.backgroundThemeDescription')}</div>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {availableBackgrounds && Object.entries(availableBackgrounds).map(([key, bg]) => (
+                            <button
+                                key={key}
+                                onClick={() => setBackgroundTheme(key as BackgroundKey)}
+                                className={clsx(
+                                    "relative h-20 rounded-lg border-2 overflow-hidden transition-all group",
+                                    backgroundTheme === key 
+                                        ? "border-primary-500 scale-105 shadow-lg shadow-primary-500/20" 
+                                        : "border-slate-700 hover:border-slate-500"
+                                )}
+                            >
+                                <div 
+                                    className="absolute inset-0 transition-transform group-hover:scale-110 duration-700"
+                                    style={{ background: bg.value, backgroundColor: bg.color }}
+                                />
+                                <div className="absolute inset-0 flex items-center justify-center bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+                                    <span className="text-xs font-bold text-white drop-shadow-md">{bg.name}</span>
+                                </div>
+                                {backgroundTheme === key && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black/20">
+                                        <div className="bg-primary-500 rounded-full p-1 shadow-lg">
+                                            <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                )}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'general' && (
+            <div className="space-y-8">
+              <header>
+                <h3 className="text-2xl font-bold mb-2">{t('settings.generalTitle')}</h3>
+                <p className="text-slate-400">{t('settings.generalDescription')}</p>
+              </header>
+              
+              <div className="p-6 bg-slate-800/50 rounded-xl border border-slate-700">
                 <div className="flex items-center justify-between mb-4">
                    <div>
                        <div className="font-bold">{t('settings.language')}</div>
@@ -1600,7 +1933,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                          window.localStorage.setItem('playhub:locale', lng)
                        }
                      }}
-                     className="bg-slate-900 border border-slate-700 rounded px-3 py-1 text-sm focus:outline-none focus:border-blue-500 text-white"
+                     className="bg-slate-900 border border-slate-700 rounded px-3 py-1 text-sm focus:outline-none focus:border-primary-500 text-white"
                    >
                      <option value="en">English</option>
                      <option value="de">Deutsch</option>
@@ -1616,14 +1949,23 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                    </div>
                 </div>
                 <div className="flex items-center justify-between mb-4">
-                   <div>
-                       <div className="font-bold">{t('settings.minimizeToTray')}</div>
-                       <div className="text-sm text-slate-400">{t('settings.minimizeToTrayDescription')}</div>
-                   </div>
-                   <div className="w-12 h-6 bg-blue-600 rounded-full relative cursor-pointer">
-                       <div className="absolute right-1 top-1 w-4 h-4 bg-white rounded-full shadow"></div>
-                   </div>
-                </div>
+               <div>
+                   <div className="font-bold">{t('settings.minimizeToTray')}</div>
+                   <div className="text-sm text-slate-400">{t('settings.minimizeToTrayDescription')}</div>
+               </div>
+               <div 
+                 className={clsx(
+                   "w-12 h-6 rounded-full relative cursor-pointer transition-colors",
+                   minimizeToTray ? "bg-primary-600" : "bg-slate-700"
+                 )}
+                 onClick={() => setMinimizeToTray(!minimizeToTray)}
+               >
+                   <div className={clsx(
+                     "absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all",
+                     minimizeToTray ? "right-1" : "left-1"
+                   )}></div>
+               </div>
+            </div>
                 <div className="flex items-center justify-between mb-4">
                   <div>
                     <div className="font-bold">{t('settings.discordPresence')}</div>
@@ -1634,7 +1976,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                     onClick={() => setDiscordPresenceEnabled(!discordPresenceEnabled)}
                     className={clsx(
                       'w-12 h-6 rounded-full relative cursor-pointer transition-colors',
-                      discordPresenceEnabled ? 'bg-blue-600' : 'bg-slate-700'
+                      discordPresenceEnabled ? 'bg-primary-600' : 'bg-slate-700'
                     )}
                   >
                     <span
@@ -1658,6 +2000,9 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                     onClick={() => {
                       if (typeof window !== 'undefined') {
                         window.localStorage.removeItem('playhub:onboardingSeen')
+                      }
+                      if (onResetOnboarding) {
+                        onResetOnboarding()
                       }
                       setOnboardingResetMessage(t('settings.messages.onboardingResetSuccess'))
                       setTimeout(() => {
@@ -1687,7 +2032,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                     <select
                       value={feedbackForm.type}
                       onChange={e => setFeedbackForm({ ...feedbackForm, type: e.target.value })}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500"
                     >
                       <option value="bug">{t('settings.feedback.typeBug')}</option>
                       <option value="feature">{t('settings.feedback.typeFeature')}</option>
@@ -1722,7 +2067,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       required
                       rows={5}
                       placeholder={t('settings.feedback.messagePlaceholder')}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 resize-none"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500 resize-none"
                     />
                   </div>
 
@@ -1733,7 +2078,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       value={feedbackForm.contactEmail}
                       onChange={e => setFeedbackForm({ ...feedbackForm, contactEmail: e.target.value })}
                       placeholder={t('settings.feedback.emailPlaceholder')}
-                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-slate-900 border border-slate-700 rounded-lg px-4 py-2 text-white focus:outline-none focus:border-primary-500"
                     />
                   </div>
 
@@ -1755,7 +2100,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       }}
                       className={clsx(
                         'w-12 h-6 rounded-full relative cursor-pointer transition-colors',
-                        sendFeedbackToDiscord ? 'bg-blue-600' : 'bg-slate-700'
+                        sendFeedbackToDiscord ? 'bg-primary-600' : 'bg-slate-700'
                       )}
                     >
                       <span
@@ -1774,7 +2119,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                     <button
                       type="submit"
                       disabled={isSubmittingFeedback || !feedbackForm.content.trim()}
-                      className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium text-white transition-colors flex items-center gap-2"
+                      className="px-6 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg font-medium text-white transition-colors flex items-center gap-2"
                     >
                       {isSubmittingFeedback ? (
                         <>
@@ -1800,13 +2145,13 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
 
               {!systemStats ? (
                 <div className="flex items-center justify-center h-64">
-                   <span className="w-8 h-8 border-4 border-blue-500/30 border-t-blue-500 rounded-full animate-spin" />
+                   <span className="w-8 h-8 border-4 border-primary-500/30 border-t-primary-500 rounded-full animate-spin" />
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="p-6 bg-slate-800/50 rounded-xl border border-slate-700">
                     <h4 className="font-bold text-slate-200 mb-4 flex items-center gap-2">
-                      <span className="text-blue-400">💻</span> {t('settings.system.cpu')}
+                      <span className="text-primary-400">💻</span> {t('settings.system.cpu')}
                     </h4>
                     <div className="space-y-4">
                       <div className="text-3xl font-bold text-white">
@@ -1814,7 +2159,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       </div>
                       <div className="w-full h-2 bg-slate-900 rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-blue-500 transition-all duration-500"
+                          className="h-full bg-primary-500 transition-all duration-500"
                           style={{ width: `${Math.min(systemStats.cpu.percentCPUUsage, 100)}%` }}
                         />
                       </div>
@@ -1879,7 +2224,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
           <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg p-6 shadow-2xl">
             <div className="flex items-start justify-between gap-4">
               <div>
-                <div className="text-sm font-semibold text-blue-400 mb-1">{t('settings.updates.dialogUpdateAvailable')}</div>
+                <div className="text-sm font-semibold text-primary-400 mb-1">{t('settings.updates.dialogUpdateAvailable')}</div>
                 <h3 className="text-xl font-bold text-white">
                   PlayHub {updateState.availableVersion}
                 </h3>
@@ -1922,7 +2267,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                 <select
                   value={remindDays}
                   onChange={(e) => setRemindDays(Number(e.target.value))}
-                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-blue-500"
+                  className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-xs focus:outline-none focus:border-primary-500"
                 >
                   <option value={1}>{t('settings.updates.dialogRemind1Day')}</option>
                   <option value={3}>{t('settings.updates.dialogRemind3Days')}</option>
@@ -1981,7 +2326,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       setShouldAutoInstall(false)
                     }
                   }}
-                  className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium text-white flex items-center gap-2 disabled:opacity-50"
+                  className="px-4 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-sm font-medium text-white flex items-center gap-2 disabled:opacity-50"
                 >
                   {isDownloadingUpdate ? (
                     <>

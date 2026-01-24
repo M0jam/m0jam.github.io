@@ -1,41 +1,152 @@
-import React, { useEffect, useState } from 'react'
+import { useEffect, useState, useRef } from 'react'
 import clsx from 'clsx'
-import { X, Play, Clock, Star, MoreVertical, Globe, Monitor, Image as ImageIcon, Video, Calendar, History, RefreshCw, Download, HardDrive } from 'lucide-react'
+import { X, Play, Clock, Star, Download, Tag as TagIcon, Plus, StickyNote, Image as ImageIcon, Video } from 'lucide-react'
 import { electron } from '../utils/electron'
 import { useTranslation } from 'react-i18next'
 
 interface GameDetailsModalProps {
   gameId: string | null
+  initialGameData?: any
   isOpen: boolean
   onClose: () => void
 }
 
-export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalProps) {
-  const [game, setGame] = useState<any>(null)
+export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: GameDetailsModalProps) {
+  const [game, setGame] = useState<any>(initialGameData || null)
   const [loading, setLoading] = useState(false)
-  const [activeTab, setActiveTab] = useState<'overview' | 'stats'>('overview')
+  const [refreshing, setRefreshing] = useState(false)
+  const [activeTab, setActiveTab] = useState<'overview' | 'stats' | 'notes'>('overview')
   const [launching, setLaunching] = useState(false)
   const [sessionHistory, setSessionHistory] = useState<any[]>([])
   const [isSyncing, setIsSyncing] = useState(false)
   const [currentSession, setCurrentSession] = useState<any | null>(null)
   const [currentSessionSeconds, setCurrentSessionSeconds] = useState(0)
+  
+  // Notes state
+  const [notes, setNotes] = useState('')
+  const [savingNotes, setSavingNotes] = useState(false)
+  const notesTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+
+  // Tags state
+  const [allTags, setAllTags] = useState<any[]>([])
+  const [gameTags, setGameTags] = useState<any[]>([])
+  const [isManagingTags, setIsManagingTags] = useState(false)
+  const [newTagInput, setNewTagInput] = useState('')
+
   const { t } = useTranslation()
 
   useEffect(() => {
     if (isOpen && gameId) {
-      loadGameDetails(gameId)
+      let hasData = !!game
+      if (initialGameData && initialGameData.id === gameId) {
+        setGame(initialGameData)
+        hasData = true
+      } else if (game && game.id !== gameId) {
+        setGame(null)
+        hasData = false
+      }
+
+      loadGameDetails(gameId, hasData)
       loadHistory(gameId)
       loadCurrentSession(gameId)
+      loadTags(gameId)
+      loadNotes(gameId)
     } else {
       setGame(null)
       setSessionHistory([])
       setCurrentSession(null)
       setCurrentSessionSeconds(0)
+      setGameTags([])
+      setIsManagingTags(false)
+      setNewTagInput('')
+      setNotes('')
     }
-  }, [isOpen, gameId])
+  }, [isOpen, gameId, initialGameData])
 
-  const loadGameDetails = async (id: string) => {
-    setLoading(true)
+  const loadNotes = async (id: string) => {
+    try {
+      const content = await electron.ipcRenderer.invoke('notes:get', id)
+      setNotes(content)
+    } catch (error) {
+      console.error('Failed to load notes:', error)
+    }
+  }
+
+  const handleNotesChange = (content: string) => {
+    setNotes(content)
+    setSavingNotes(true)
+    
+    if (notesTimeoutRef.current) {
+      clearTimeout(notesTimeoutRef.current)
+    }
+
+    notesTimeoutRef.current = setTimeout(async () => {
+      if (gameId) {
+        try {
+          await electron.ipcRenderer.invoke('notes:save', { gameId, content })
+        } catch (error) {
+          console.error('Failed to save notes:', error)
+        } finally {
+          setSavingNotes(false)
+        }
+      }
+    }, 1000)
+  }
+
+  const loadTags = async (id: string) => {
+    try {
+      const [all, assigned] = await Promise.all([
+        electron.ipcRenderer.invoke('tags:get-all'),
+        electron.ipcRenderer.invoke('tags:get-for-game', id)
+      ])
+      setAllTags(all)
+      setGameTags(assigned)
+    } catch (error) {
+      console.error('Failed to load tags:', error)
+    }
+  }
+
+  const handleAddTag = async (tagName: string) => {
+    if (!game || !tagName.trim()) return
+    
+    try {
+      // Check if tag exists
+      let tag = allTags.find(t => t.name.toLowerCase() === tagName.toLowerCase())
+      
+      if (!tag) {
+        // Create new tag
+        tag = await electron.ipcRenderer.invoke('tags:create', tagName)
+        if (tag) {
+          setAllTags(prev => [...prev, tag!].sort((a, b) => a.name.localeCompare(b.name)))
+        }
+      }
+
+      if (tag) {
+        // Add to game
+        await electron.ipcRenderer.invoke('tags:add-to-game', { gameId: game.id, tagId: tag.id })
+        await loadTags(game.id)
+        setNewTagInput('')
+      }
+    } catch (error) {
+      console.error('Failed to add tag:', error)
+    }
+  }
+
+  const handleRemoveTag = async (tagId: number) => {
+    if (!game) return
+    try {
+      await electron.ipcRenderer.invoke('tags:remove-from-game', { gameId: game.id, tagId: tagId })
+      await loadTags(game.id)
+    } catch (error) {
+      console.error('Failed to remove tag:', error)
+    }
+  }
+
+
+  const loadGameDetails = async (id: string, hasData: boolean = false) => {
+    if (!hasData) setLoading(true)
+    else setRefreshing(true)
+
     try {
       const details = await electron.ipcRenderer.invoke('game:get-details', id)
       setGame(details)
@@ -43,6 +154,7 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
       console.error('Failed to load game details:', error)
     } finally {
       setLoading(false)
+      setRefreshing(false)
     }
   }
 
@@ -136,14 +248,14 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
             onClick={onClose}
             type="button"
             aria-label={t('gameDetails.actions.close')}
-            className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/80 text-slate-300 hover:text-white hover:border-slate-500 hover:bg-slate-900 active:bg-slate-950 transition-colors shadow-lg shadow-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+            className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/80 text-slate-300 hover:text-white hover:border-slate-500 hover:bg-slate-900 active:bg-slate-950 transition-colors shadow-lg shadow-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
         >
             <X className="w-4 h-4" />
         </button>
 
         {loading || !game ? (
             <div className="flex-1 flex items-center justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary-500"></div>
             </div>
         ) : (
             <>
@@ -163,7 +275,12 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
                             {game.box_art_url && <img src={game.box_art_url} className="w-full h-full object-cover" />}
                         </div>
                         <div className="flex-1 mb-4">
-                            <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-md">{game.title}</h1>
+                            <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-md flex items-center gap-3">
+                                {game.title}
+                                {refreshing && (
+                                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                )}
+                            </h1>
                             <div className="flex items-center gap-4 text-sm text-slate-300">
                                 {game.metadata?.developer && <span>{game.metadata.developer}</span>}
                                 {game.metadata?.release_date && (
@@ -179,14 +296,24 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
                                     className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'overview' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
                                 >
                                     {t('gameDetails.tabs.overview')}
-                                    {activeTab === 'overview' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-t-full"></div>}
+                                    {activeTab === 'overview' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 rounded-t-full"></div>}
                                 </button>
                                 <button 
                                     onClick={() => setActiveTab('stats')}
                                     className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'stats' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
                                 >
                                     {t('gameDetails.tabs.stats')}
-                                    {activeTab === 'stats' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-emerald-500 rounded-t-full"></div>}
+                                    {activeTab === 'stats' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 rounded-t-full"></div>}
+                                </button>
+                                <button 
+                                    onClick={() => setActiveTab('notes')}
+                                    className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'notes' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                                >
+                                    <div className="flex items-center gap-2">
+                                        <StickyNote className="w-4 h-4" />
+                                        {t('gameDetails.tabs.notes')}
+                                    </div>
+                                    {activeTab === 'notes' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 rounded-t-full"></div>}
                                 </button>
                             </nav>
                         </div>
@@ -203,10 +330,10 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
                             ) : (
                                 <button 
                                     onClick={handleInstall}
-                                    className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-lg font-bold flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-blue-500/20"
-                                >
-                                    <Download className="w-5 h-5" />
-                                    {t('gameDetails.actions.install')}
+                        className="bg-primary-600 hover:bg-primary-500 text-white px-8 py-3 rounded-lg font-bold flex items-center gap-3 transition-all transform hover:scale-105 active:scale-95 shadow-lg shadow-primary-500/20"
+                    >
+                        <Download className="w-5 h-5" />
+                        {t('gameDetails.actions.install')}
                                 </button>
                             )}
                             
@@ -227,8 +354,8 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
                 </div>
 
                 <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    <div className="max-w-5xl mx-auto pl-[15rem] pr-8 py-8 pt-16 grid grid-cols-3 gap-8">
-                        {activeTab === 'overview' ? (
+                    <div className="max-w-5xl mx-auto pl-[15rem] pr-8 py-8 pt-16 grid grid-cols-3 gap-8 h-full">
+                        {activeTab === 'overview' && (
                           <>
                             <div className="col-span-2 space-y-8">
                                 <div className="grid grid-cols-3 gap-4 p-4 bg-slate-800/50 rounded-xl border border-slate-800">
@@ -267,6 +394,23 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
                                   <p className="text-slate-400 italic">{t('gameDetails.overview.noDescription')}</p>
                                 )}
                               </div>
+
+                              {/* Media / Screenshots Section */}
+                              {game.metadata?.screenshots && game.metadata.screenshots.length > 0 && (
+                                <div className="mt-8">
+                                  <h3 className="text-xl font-bold mb-4">{t('gameDetails.overview.media')}</h3>
+                                  <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
+                                    {game.metadata.screenshots.map((url: string, index: number) => (
+                                      <div key={index} className="flex-none w-64 aspect-video rounded-lg overflow-hidden border border-slate-700 snap-center shadow-lg group relative cursor-pointer" onClick={() => window.open(url.replace('.600x338', '.1920x1080'), '_blank')}>
+                                          <img src={url} loading="lazy" alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white drop-shadow-md"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                                          </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
 
                               {/* HowLongToBeat Section */}
                               {(game.hltb_main || game.hltb_extra || game.hltb_completionist) && (
@@ -360,17 +504,22 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
                                   </div>
                                   <div>
                                     <dt className="text-slate-500">{t('gameDetails.overview.platformLabel')}</dt>
-                                    <dd className="text-slate-200 capitalize">{game.id.startsWith('steam_') ? t('gameDetails.overview.platformSteam') : t('gameDetails.overview.platformPc')}</dd>
+                                    <dd className="text-slate-200 capitalize">
+                                      {game.id.startsWith('steam_') ? t('gameDetails.overview.platformSteam') : 
+                                       game.id.startsWith('gog_') ? t('gameDetails.overview.platformGog') : 
+                                       t('gameDetails.overview.platformPc')}
+                                    </dd>
                                   </div>
                                 </dl>
-                                {game.id.startsWith('steam_') && (
+                                {(game.id.startsWith('steam_') || game.id.startsWith('gog_')) && (
                                   <div className="mt-4 space-y-2">
                                     <button 
                                       onClick={() => electron.ipcRenderer.invoke('game:open-store', game.id)}
-                                      className="block w-full text-center px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-lg text-sm transition-colors text-white font-medium shadow-lg shadow-blue-500/20"
+                                      className="block w-full text-center px-4 py-2 bg-primary-600 hover:bg-primary-500 rounded-lg text-sm transition-colors text-white font-medium shadow-lg shadow-primary-500/20"
                                     >
                                       {t('gameDetails.overview.storePage')}
                                     </button>
+                                    {game.id.startsWith('steam_') && (
                                     <a 
                                       href={`https://steamcommunity.com/app/${game.platform_game_id}`}
                                       target="_blank"
@@ -388,24 +537,138 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
                                     >
                                       {t('gameDetails.overview.communityHub')}
                                     </a>
+                                    )}
                                   </div>
                                 )}
                               </div>
-                              {game.metadata?.screenshots && game.metadata.screenshots.length > 0 && (
-                                <div>
-                                  <h4 className="font-bold text-slate-400 mb-4 text-sm uppercase">{t('gameDetails.overview.media')}</h4>
-                                  <div className="grid grid-cols-2 gap-2">
-                                    {game.metadata.screenshots.slice(0, 4).map((shot: string, i: number) => (
-                                      <img key={i} src={shot} className="rounded-lg border border-slate-800 hover:border-blue-500 transition-colors cursor-pointer" />
+
+                              {/* Tags Section */}
+                              <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-800/50">
+                                <h4 className="font-bold text-slate-400 mb-4 text-sm uppercase flex items-center gap-2">
+                                  <TagIcon className="w-4 h-4" />
+                                  Tags
+                                </h4>
+                                
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  {gameTags.map(tag => (
+                                    <div key={tag.id} className="flex items-center gap-1 bg-slate-700/50 text-slate-200 px-2 py-1 rounded text-sm group border border-slate-700">
+                                      <span>{tag.name}</span>
+                                      <button 
+                                        onClick={() => handleRemoveTag(tag.id)}
+                                        className="opacity-0 group-hover:opacity-100 p-0.5 hover:bg-red-500/20 hover:text-red-400 rounded transition-all"
+                                      >
+                                        <X className="w-3 h-3" />
+                                      </button>
+                                    </div>
+                                  ))}
+                                  {gameTags.length === 0 && !isManagingTags && (
+                                    <span className="text-slate-500 text-sm italic">No tags</span>
+                                  )}
+                                </div>
+
+                                {isManagingTags ? (
+                                  <div className="space-y-2">
+                                    <div className="relative">
+                                      <input
+                                        type="text"
+                                        value={newTagInput}
+                                        onChange={(e) => setNewTagInput(e.target.value)}
+                                        onKeyDown={(e) => {
+                                          if (e.key === 'Enter') handleAddTag(newTagInput)
+                                          if (e.key === 'Escape') setIsManagingTags(false)
+                                        }}
+                                        placeholder="Add tag..."
+                                        className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-emerald-500"
+                                        autoFocus
+                                      />
+                                      {newTagInput && (
+                                           <div className="absolute z-10 w-full bg-slate-800 border border-slate-700 rounded-b mt-1 shadow-xl max-h-40 overflow-y-auto">
+                                             {allTags
+                                               .filter(t => t.name.toLowerCase().includes(newTagInput.toLowerCase()) && !gameTags.some(gt => gt.id === t.id))
+                                               .map(tag => (
+                                                 <button
+                                                   key={tag.id}
+                                                   onClick={() => handleAddTag(tag.name)}
+                                                   className="w-full text-left px-3 py-2 text-sm text-slate-300 hover:bg-slate-700"
+                                                 >
+                                                   {tag.name}
+                                                 </button>
+                                               ))
+                                             }
+                                             {!allTags.some(t => t.name.toLowerCase() === newTagInput.toLowerCase()) && (
+                                                <button
+                                                  onClick={() => handleAddTag(newTagInput)}
+                                                  className="w-full text-left px-3 py-2 text-sm text-emerald-400 hover:bg-slate-700 border-t border-slate-700"
+                                                >
+                                                  Create &quot;{newTagInput}&quot;
+                                                </button>
+                                             )}
+                                           </div>
+                                      )}
+                                    </div>
+                                    <button 
+                                      onClick={() => setIsManagingTags(false)}
+                                      className="text-xs text-slate-500 hover:text-slate-300"
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <button 
+                                    onClick={() => setIsManagingTags(true)}
+                                    className="flex items-center gap-2 text-sm text-emerald-400 hover:text-emerald-300 transition-colors"
+                                  >
+                                    <Plus className="w-4 h-4" />
+                                    Add Tag
+                                  </button>
+                                )}
+                              </div>
+
+                              {/* Media Section (Screenshots & Videos) */}
+                              {(game.metadata?.screenshots?.length > 0 || game.metadata?.movies?.length > 0) && (
+                                <div className="bg-slate-800/30 p-4 rounded-xl border border-slate-800/50">
+                                  <h4 className="font-bold text-slate-400 mb-4 text-sm uppercase flex items-center gap-2">
+                                    <ImageIcon className="w-4 h-4" />
+                                    {t('gameDetails.overview.media')}
+                                  </h4>
+                                  <div className="grid grid-cols-2 gap-3">
+                                    {/* Videos */}
+                                    {game.metadata.movies?.slice(0, 2).map((movie: string, i: number) => (
+                                       <div key={`vid-${i}`} className="relative group aspect-video rounded-lg overflow-hidden border border-slate-800 bg-black">
+                                          <video 
+                                              src={movie} 
+                                              controls 
+                                              className="w-full h-full object-contain"
+                                              poster={game.metadata.screenshots?.[i]}
+                                          />
+                                          <div className="absolute top-2 right-2 bg-black/60 p-1 rounded text-white pointer-events-none">
+                                              <Video className="w-3 h-3" />
+                                          </div>
+                                       </div>
+                                    ))}
+                                    
+                                    {/* Screenshots (fill remaining slots up to 4 total) */}
+                                    {game.metadata.screenshots?.slice(0, 4 - (game.metadata.movies?.slice(0,2).length || 0)).map((shot: string, i: number) => (
+                                      <div key={`img-${i}`} className="relative group aspect-video rounded-lg overflow-hidden border border-slate-800 bg-slate-900 cursor-pointer" onClick={() => window.open(shot, '_blank')}>
+                                          <img 
+                                            src={shot} 
+                                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+                                            loading="lazy"
+                                          />
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
+                                              <Plus className="w-6 h-6 text-white drop-shadow-md" />
+                                          </div>
+                                      </div>
                                     ))}
                                   </div>
                                 </div>
                               )}
                             </div>
                           </>
-                        ) : (
-                          <>
-                            <div className="col-span-3 space-y-8">
+                        )}
+
+                        {activeTab === 'stats' && (
+                          <div className="col-span-3 space-y-8">
                               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 <div className="bg-slate-800/50 p-4 rounded-xl border border-slate-700/50">
                                   <div className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1">{t('gameDetails.stats.totalPlaytime')}</div>
@@ -472,8 +735,34 @@ export function GameDetailsModal({ gameId, isOpen, onClose }: GameDetailsModalPr
                                   )}
                                 </div>
                               </div>
+                          </div>
+                        )}
+
+                        {activeTab === 'notes' && (
+                            <div className="col-span-3 h-full flex flex-col min-h-[500px]">
+                                <div className="bg-slate-800/30 p-6 rounded-xl border border-slate-700/50 flex-1 flex flex-col h-full">
+                                    <div className="flex items-center justify-between mb-4">
+                                        <h3 className="text-lg font-semibold text-white flex items-center gap-2">
+                                            <StickyNote className="w-5 h-5 text-primary-500" />
+                                            {t('gameDetails.tabs.notes')}
+                                        </h3>
+                                        {savingNotes && (
+                                            <span className="text-xs text-emerald-400 animate-pulse font-medium">Saving...</span>
+                                        )}
+                                    </div>
+                                    <textarea
+                                        value={notes}
+                                        onChange={(e) => handleNotesChange(e.target.value)}
+                                        placeholder="Write your notes here... (Markdown supported)"
+                                        className="flex-1 w-full bg-slate-900/50 border border-slate-700 rounded-lg p-4 text-slate-200 resize-none focus:outline-none focus:border-primary-500 transition-colors custom-scrollbar font-mono text-sm leading-relaxed"
+                                        spellCheck={false}
+                                    />
+                                    <div className="mt-3 flex items-center justify-between text-xs text-slate-500">
+                                        <span>Notes are saved locally.</span>
+                                        <span>{notes.length} characters</span>
+                                    </div>
+                                </div>
                             </div>
-                          </>
                         )}
                     </div>
                 </div>

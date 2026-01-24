@@ -128,8 +128,12 @@ export class DataService {
                   imageSourceType = 'og_meta'
                 }
               }
-            } catch (error) {
-              console.warn('[News] Failed to fetch article thumbnail', { appId, url, error })
+            } catch (error: any) {
+              if (error.name === 'AbortError') {
+                console.log('[News] Timeout fetching article thumbnail (skipped)', { appId })
+              } else {
+                console.warn('[News] Failed to fetch article thumbnail', { appId, url, error })
+              }
             }
           }
 
@@ -205,18 +209,7 @@ export class DataService {
 
     ipcMain.handle('friends:get', async () => {
       const db = dbManager.getDb()
-      // ... (insert mock data check) ...
-      const existing = db.prepare('SELECT COUNT(*) as c FROM friends').get() as any
-      if (!existing || !existing.c) {
-        // ... (inserts)
-        const stmt = db.prepare(
-          'INSERT INTO friends (id, platform, external_id, username, avatar_url, status, game_activity) VALUES (?, ?, ?, ?, ?, ?, ?)'
-        )
-        stmt.run('friend_1', 'steam', null, 'GamerOne', null, 'online', 'Playing Cyberpunk 2077')
-        stmt.run('friend_2', 'playhub', null, 'CoopBuddy', null, 'in-game', 'Playing Valheim')
-        stmt.run('friend_3', 'epic', null, 'AfkPlayer', null, 'offline', 'Last seen 2h ago')
-      }
-
+      // Return existing friends or empty list
       return db
         .prepare(
           `SELECT id, platform, external_id, username, avatar_url, status, game_activity 
@@ -259,6 +252,26 @@ export class DataService {
         whereClause = 'WHERE g.is_installed = 1'
       } else if (filter === 'favorites') {
         whereClause = 'WHERE g.is_favorite = 1'
+      } else if (filter && filter.startsWith('tag:')) {
+        const tagId = parseInt(filter.split(':')[1])
+        if (!isNaN(tagId)) {
+          return db
+            .prepare(
+              `SELECT g.*,
+                (
+                  SELECT t.name
+                  FROM tags t
+                  JOIN game_tags gt ON gt.tag_id = t.id
+                  WHERE gt.game_id = g.id
+                    AND t.name IN ('Backlog','Playing','Completed','Abandoned')
+                  LIMIT 1
+                ) AS status_tag
+               FROM games g
+               JOIN game_tags gt_filter ON gt_filter.game_id = g.id
+               WHERE gt_filter.tag_id = ?`
+            )
+            .all(tagId)
+        }
       } else if (filter && filter !== 'all') {
         return db
           .prepare(

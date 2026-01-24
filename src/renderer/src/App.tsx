@@ -6,11 +6,15 @@ import { GameCard } from './components/GameCard'
 import { GameDetailsModal } from './components/GameDetailsModal'
 import { AddGameModal } from './components/AddGameModal'
 import { SteamLibrary } from './components/SteamLibrary'
+import { GogLibrary } from './components/GogLibrary'
 import { SocialPage } from './components/SocialPage'
+import { WelcomeIntro } from './components/WelcomeIntro'
+import { RegistrationSuccess } from './components/RegistrationSuccess'
 import { electron } from './utils/electron'
 import clsx from 'clsx'
 import i18n from './i18n'
 import { useTranslation } from 'react-i18next'
+import { Hash, Tag } from 'lucide-react'
 
 const DISCORD_INVITE_URL: string | undefined =
   typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_DISCORD_INVITE_URL
@@ -100,6 +104,15 @@ function App(): JSX.Element {
   const [steamGames, setSteamGames] = useState<any[]>([])
   const [isLoadingSteamGames, setIsLoadingSteamGames] = useState(false)
   const [steamGamesError, setSteamGamesError] = useState<string | null>(null)
+  
+  const [gogGames, setGogGames] = useState<any[]>([])
+  const [isLoadingGogGames, setIsLoadingGogGames] = useState(false)
+  const [gogGamesError, setGogGamesError] = useState<string | null>(null)
+
+  // Tag filter state
+  const [allTags, setAllTags] = useState<any[]>([])
+  const [selectedTagId, setSelectedTagId] = useState<number | null>(null)
+
   const [steamSearch, setSteamSearch] = useState('')
   const [steamSort, setSteamSort] = useState<'title' | 'playtime' | 'last_played'>('title')
   const [steamInstallFilter, setSteamInstallFilter] = useState<'all' | 'installed' | 'not_installed'>('all')
@@ -116,6 +129,24 @@ function App(): JSX.Element {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showTutorialIntro, setShowTutorialIntro] = useState(false)
   const [activeTutorial, setActiveTutorial] = useState<'accounts' | 'library' | 'social' | 'discord' | null>(null)
+  const [showWelcomeIntro, setShowWelcomeIntro] = useState(true)
+  const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false)
+  const [introData, setIntroData] = useState<any>(null)
+
+  const handleLogin = (u: any, notification?: { title: string; body: string }, isNewUser: boolean = false) => {
+    setUser(u)
+    if (notification) {
+      setNotification(notification)
+      setTimeout(() => setNotification(null), 5000)
+    }
+    if (isNewUser) {
+        setActiveTab('home')
+        setShowRegistrationSuccess(true)
+        if (typeof window !== 'undefined') {
+             window.localStorage.setItem('playhub:onboardingSeen', 'true')
+        }
+    }
+  }
 
   const homeStats = useMemo(() => {
     const base = activePlatform ? platformGames : games
@@ -163,13 +194,80 @@ function App(): JSX.Element {
     }
   }, [games, platformGames, activePlatform])
 
-  useEffect(() => {
-    const token = window.localStorage.getItem('playhub_session')
-    electron.ipcRenderer.invoke('auth:check', { token }).then((u: any) => {
-      if (u) setUser(u)
-    })
+  const selectedGameData = useMemo(() => {
+    if (!selectedGameId) return undefined
+    return games.find(g => g.id === selectedGameId) || 
+           platformGames.find(g => g.id === selectedGameId) ||
+           steamGames.find(g => g.id === selectedGameId) ||
+           gogGames.find(g => g.id === selectedGameId)
+  }, [selectedGameId, games, platformGames, steamGames, gogGames])
 
-    electron.ipcRenderer.invoke('steam:scan')
+  const [isAppInitialized, setIsAppInitialized] = useState(false)
+
+  useEffect(() => {
+    const initApp = async () => {
+      try {
+        const token = window.localStorage.getItem('playhub_session')
+        const u = await electron.ipcRenderer.invoke('auth:check', { token })
+        if (u) {
+          setUser(u)
+          if (typeof window !== 'undefined') {
+            const onboardingSeen = window.localStorage.getItem('playhub:onboardingSeen')
+            if (!onboardingSeen) {
+              setShowTutorialIntro(true)
+            }
+          }
+        }
+
+        // Perform initial scan
+        await electron.ipcRenderer.invoke('steam:scan')
+
+        // Sync news and data
+        try {
+          await electron.ipcRenderer.invoke('news:sync')
+        } catch (err) {
+          console.warn('News sync failed', err)
+        }
+
+        // Pre-load data
+        const initialGames = await electron.ipcRenderer.invoke('library:get', 'all')
+        setGames(initialGames)
+
+        const initialNews = await electron.ipcRenderer.invoke('news:get')
+        setNews(initialNews)
+
+        // Fetch intro suggestions to prevent flash
+        try {
+            const suggestions = await electron.ipcRenderer.invoke('game:get-intro-suggestions')
+            if (suggestions && (suggestions.lastPlayed || suggestions.random)) {
+                setIntroData(suggestions)
+                setShowWelcomeIntro(true)
+            } else {
+                setShowWelcomeIntro(false)
+            }
+        } catch (e) {
+            console.warn('Failed to fetch intro suggestions', e)
+            setShowWelcomeIntro(false)
+        }
+
+        // Sync tray behavior
+        const minimizeToTray = window.localStorage.getItem('playhub:minimizeToTray')
+        // Default to true if not set
+        const shouldMinimize = minimizeToTray !== 'false'
+        window.electron.ipcRenderer.send('settings:update-tray-behavior', shouldMinimize)
+
+        // Signal main process that we are ready
+        window.electron.ipcRenderer.send('app:initialized')
+        setIsAppInitialized(true)
+      } catch (e) {
+        console.error('Initialization failed', e)
+        // Even if it fails, we should probably show the app
+        window.electron.ipcRenderer.send('app:initialized')
+        setIsAppInitialized(true)
+      }
+    }
+    
+    initApp()
 
     const storedTheme = window.localStorage.getItem('playhub:theme')
     if (storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system') {
@@ -206,42 +304,6 @@ function App(): JSX.Element {
   }, [])
 
   useEffect(() => {
-    const updateResolvedTheme = () => {
-      if (themePreference === 'dark') {
-        setResolvedTheme('dark')
-        return
-      }
-      if (themePreference === 'light') {
-        setResolvedTheme('light')
-        return
-      }
-      const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches
-      setResolvedTheme(prefersDark ? 'dark' : 'light')
-    }
-
-    updateResolvedTheme()
-
-    if (themePreference === 'system' && window.matchMedia) {
-      const media = window.matchMedia('(prefers-color-scheme: dark)')
-      const listener = () => updateResolvedTheme()
-      media.addEventListener('change', listener)
-      return () => {
-        media.removeEventListener('change', listener)
-      }
-    }
-  }, [themePreference])
-
-  useEffect(() => {
-    if (resolvedTheme === 'light') {
-      document.documentElement.classList.add('theme-light')
-      document.documentElement.classList.remove('theme-dark')
-    } else {
-      document.documentElement.classList.add('theme-dark')
-      document.documentElement.classList.remove('theme-light')
-    }
-  }, [resolvedTheme])
-
-  useEffect(() => {
     const interval = setInterval(() => {
       setSessionElapsedSeconds(Math.floor((Date.now() - sessionStart) / 1000))
     }, 1000)
@@ -269,21 +331,13 @@ function App(): JSX.Element {
     }
   }, [user, libraryFilter, activeTab])
 
-  useEffect(() => {
-    if (!user) return
-    if (typeof window === 'undefined') return
-    const key = 'playhub:onboardingSeen'
-    const seen = window.localStorage.getItem(key)
-    if (!seen) {
-      setActiveTab('home')
-      setShowTutorialIntro(true)
-      window.localStorage.setItem(key, 'true')
-    }
-  }, [user])
+
 
   useEffect(() => {
     if (activeTab === 'steam-games') {
       loadSteamGames()
+    } else if (activeTab === 'gog-games') {
+      loadGogGames()
     }
   }, [activeTab])
 
@@ -329,6 +383,9 @@ function App(): JSX.Element {
 
   const refreshData = async () => {
     try {
+      // Always refresh tags
+      electron.ipcRenderer.invoke('tags:get-all').then(setAllTags).catch(console.error)
+
       if (activeTab === 'home') {
         const data = await electron.ipcRenderer.invoke('library:get', libraryFilter)
         setGames(data)
@@ -378,6 +435,32 @@ function App(): JSX.Element {
       setSteamGames([])
     } finally {
       setIsLoadingSteamGames(false)
+    }
+  }
+
+  const loadGogGames = async () => {
+    try {
+      setIsLoadingGogGames(true)
+      setGogGamesError(null)
+      const data = await electron.ipcRenderer.invoke('library:get', 'gog')
+      const normalized = (data || []).map((g: any) => {
+        let metadata = g.metadata
+        if (typeof metadata === 'string') {
+          try {
+            metadata = JSON.parse(metadata)
+          } catch {
+            metadata = null
+          }
+        }
+        return { ...g, metadata }
+      })
+      setGogGames(normalized)
+    } catch (e: any) {
+      console.error('Failed to load GOG games', e)
+      setGogGamesError(i18n.t('errors.gogLibraryLoad', 'Failed to load GOG library'))
+      setGogGames([])
+    } finally {
+      setIsLoadingGogGames(false)
     }
   }
 
@@ -473,6 +556,42 @@ function App(): JSX.Element {
     }
   }
 
+  const handleGogRefresh = async () => {
+    try {
+        setIsLoadingGogGames(true)
+        const status = await electron.ipcRenderer.invoke('gog:get-status')
+        if (status.connected && status.gogId) {
+             const result = await electron.ipcRenderer.invoke('gog:sync', { gogId: status.gogId })
+             if (!result.success) {
+                 setNotification({ title: 'GOG Sync Error', body: result.error || 'Unknown error' })
+                 setTimeout(() => setNotification(null), 5000)
+             }
+             await loadGogGames()
+        }
+    } catch (e: any) {
+        console.error('Failed to refresh GOG games', e)
+        setNotification({ title: 'GOG Refresh Failed', body: e.message })
+        setTimeout(() => setNotification(null), 5000)
+    } finally {
+        setIsLoadingGogGames(false)
+    }
+  }
+
+  const handleGogInstallToggle = async (game: any) => {
+    if (game.is_installed) {
+      await electron.ipcRenderer.invoke('game:uninstall', game.id)
+    } else {
+      await electron.ipcRenderer.invoke('game:install', game.id)
+    }
+    // GOG status update depends on Galaxy, so we can't reliably scan immediately.
+    // But we can refresh the view in case local state changed (e.g. optimistic update if implemented later)
+    if (activeTab === 'gog-games') {
+      loadGogGames()
+    } else {
+      refreshData()
+    }
+  }
+
   const handleSteamInstallToggle = async (game: any) => {
     if (game.is_installed) {
       await electron.ipcRenderer.invoke('game:uninstall', game.id)
@@ -506,9 +625,11 @@ function App(): JSX.Element {
 
   const filteredHomeGames = useMemo(() => {
     const base = activePlatform ? platformGames : games
-    if (!searchQuery.trim()) return base
+    let result = base
+    
+    if (!searchQuery.trim()) return result
     const q = searchQuery.toLowerCase()
-    return base.filter((g: any) => {
+    return result.filter((g: any) => {
       if (g.title && g.title.toLowerCase().includes(q)) return true
       if (g.status_tag && g.status_tag.toLowerCase().includes(q)) return true
       if (g.platform && String(g.platform).toLowerCase().includes(q)) return true
@@ -516,20 +637,46 @@ function App(): JSX.Element {
     })
   }, [games, platformGames, activePlatform, searchQuery])
 
-  if (!user) {
-    return <LoginScreen onLogin={setUser} />
+  if (!isAppInitialized) {
+    return (
+      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 text-white">
+        <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <div className="text-lg text-slate-400">Initializing PlayHub...</div>
+      </div>
+    )
   }
 
   return (
-    <div className="h-screen w-screen flex bg-slate-950 text-slate-50 font-sans overflow-hidden relative">
+    <div className="h-screen w-screen flex bg-transparent text-slate-50 font-sans overflow-hidden relative">
       {/* Animated Background Layer */}
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none bg-slate-950">
-        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-purple-600/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob"></div>
-        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-blue-600/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
-        <div className="absolute bottom-[-20%] left-[20%] w-[500px] h-[500px] bg-emerald-600/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-4000"></div>
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary-600/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary-500/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
+        <div className="absolute bottom-[-20%] left-[20%] w-[500px] h-[500px] bg-primary-700/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-4000"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/60 via-slate-950/40 to-slate-950/60" />
       </div>
 
+      {!user ? (
+        <LoginScreen onLogin={handleLogin} />
+      ) : (
+        <>
+      {showRegistrationSuccess && (
+        <RegistrationSuccess onComplete={() => {
+          setShowRegistrationSuccess(false)
+          setShowTutorialIntro(true)
+        }} />
+      )}
+      {!showRegistrationSuccess && showWelcomeIntro && (
+        <WelcomeIntro 
+          username={user.username} 
+          onComplete={() => setShowWelcomeIntro(false)} 
+          onSelectGame={(id) => {
+            setSelectedGameId(id)
+            setShowWelcomeIntro(false)
+          }}
+          initialData={introData}
+        />
+      )}
       {showTutorialIntro && (
         <div className="absolute inset-0 z-40 flex items-start justify-center pointer-events-none">
           <div className="mt-24 w-full max-w-md px-4 pointer-events-auto">
@@ -554,7 +701,7 @@ function App(): JSX.Element {
                     setShowTutorialIntro(false)
                     setActiveTutorial('accounts')
                   }}
-                  className="inline-flex items-center px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-xs font-medium text-white"
+                  className="inline-flex items-center px-3 py-1.5 rounded-lg bg-primary-600 hover:bg-primary-500 text-xs font-medium text-white"
                 >
                   {t('app.onboarding.introStart')}
                 </button>
@@ -570,11 +717,20 @@ function App(): JSX.Element {
         onLogout={handleLogout}
         onUserUpdated={setUser}
         onDisconnected={handleAccountDisconnected}
+        onResetOnboarding={() => {
+          setIsSettingsOpen(false)
+          setShowTutorialIntro(true)
+        }}
       />
       <GameDetailsModal 
         gameId={selectedGameId}
+        initialGameData={selectedGameData}
         isOpen={!!selectedGameId}
-        onClose={() => setSelectedGameId(null)}
+        onClose={() => {
+          setSelectedGameId(null)
+          // Refresh tags in case they were modified
+          electron.ipcRenderer.invoke('tags:get-all').then(setAllTags).catch(console.error)
+        }}
       />
       <AddGameModal 
         isOpen={isAddGameOpen} 
@@ -584,18 +740,19 @@ function App(): JSX.Element {
           setIsAddGameOpen(false)
         }} 
       />
-      <div className="relative z-10 w-64 glass-panel border-r-0 m-4 rounded-2xl p-4 flex flex-col gap-6 flex-shrink-0 select-none">
-        <div className="px-2 cursor-pointer mb-2" onClick={() => setActiveTab('home')}>
+      <div className="relative z-10 w-64 glass-panel border-r-0 m-4 rounded-2xl p-4 flex flex-col flex-shrink-0 select-none overflow-hidden">
+        <div className="px-2 cursor-pointer mb-6" onClick={() => setActiveTab('home')}>
             <Logo className="h-10 w-auto" />
         </div>
         
-        <div className="space-y-1 relative">
+        <div className="flex-1 overflow-y-auto min-h-0 space-y-6 scrollbar-hide">
+            <div className="space-y-1 relative">
             {activeTutorial === 'library' && (
               <div className="absolute top-10 left-2 z-30">
-                <div className="relative bg-slate-900 border border-blue-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 max-w-xs">
+                <div className="relative bg-slate-900 border border-primary-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 max-w-xs">
                   <div className="absolute top-6 -left-2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-t-transparent border-b-transparent border-r-slate-900" />
                   <div className="flex items-center justify-between mb-1">
-                    <div className="font-semibold text-blue-200">
+                    <div className="font-semibold text-primary-200">
                       {t('app.onboarding.libraryTitle')}
                     </div>
                     <div className="text-[10px] text-slate-400 border border-slate-600 rounded-full px-2 py-0.5">
@@ -605,32 +762,44 @@ function App(): JSX.Element {
                   <div className="text-[11px] text-slate-300">
                     {t('app.onboarding.libraryTutorialHint')}
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setActiveTutorial('social')}
-                    className="mt-2 inline-flex items-center px-2 py-1 rounded bg-blue-600/80 text-[10px] font-medium text-white hover:bg-blue-500"
-                  >
-                    {t('app.onboarding.nextStep')}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setActiveTutorial('social')}
+                      className="mt-2 inline-flex items-center px-2 py-1 rounded bg-primary-600/80 text-[10px] font-medium text-white hover:bg-primary-500"
+                    >
+                      {t('app.onboarding.nextStep')}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveTutorial(null);
+                      }}
+                      className="mt-2 inline-flex items-center px-2 py-1 rounded border border-slate-700 text-[10px] font-medium text-slate-400 hover:text-white hover:bg-slate-800"
+                    >
+                      {t('app.onboarding.skip')}
+                    </button>
+                  </div>
                 </div>
               </div>
             )}
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2">{t('app.sidebar.library')}</h3>
             <button 
-                onClick={() => { setActiveTab('home'); setLibraryFilter('all') }}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'all' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800")}
+                onClick={() => { setActiveTab('home'); setLibraryFilter('all'); setSelectedTagId(null); }}
+                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'all' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
             >
                 {t('app.sidebar.allGames')}
             </button>
             <button 
-                onClick={() => { setActiveTab('home'); setLibraryFilter('favorites') }}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'favorites' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800")}
+                onClick={() => { setActiveTab('home'); setLibraryFilter('favorites'); setSelectedTagId(null); }}
+                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'favorites' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
             >
                 {t('app.sidebar.favorites')}
             </button>
             <button 
-                onClick={() => { setActiveTab('home'); setLibraryFilter('installed') }}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'installed' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800")}
+                onClick={() => { setActiveTab('home'); setLibraryFilter('installed'); setSelectedTagId(null); }}
+                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'installed' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
             >
                 {t('app.sidebar.installed')}
             </button>
@@ -640,44 +809,58 @@ function App(): JSX.Element {
             <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2">{t('app.sidebar.collection')}</h3>
             <button 
                 onClick={() => setActiveTab('inventory')}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'inventory' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800")}
+                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'inventory' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
             >
                 {t('app.sidebar.inventory')}
             </button>
             <button 
                 onClick={() => setActiveTab('steam-games')}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'steam-games' ? "bg-blue-600/10 text-blue-400" : "text-slate-400 hover:bg-slate-800")}
+                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'steam-games' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
             >
                 {t('app.sidebar.steamLibrary')}
+            </button>
+            <button 
+                onClick={() => setActiveTab('gog-games')}
+                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'gog-games' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
+            >
+                {t('app.sidebar.gogLibrary', 'GOG Galaxy')}
             </button>
         </div>
 
         <div className="space-y-1">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2">{t('app.sidebar.platforms')}</h3>
-            <button
-              onClick={() => {
-                const next = activePlatform === 'steam' ? null : 'steam'
-                setActivePlatform(next)
-                loadPlatformGames(next)
-                setActiveTab('home')
-              }}
-              className={clsx(
-                "w-full flex items-center justify-between px-3 py-2 rounded-lg cursor-pointer group transition-colors",
-                activePlatform === 'steam' ? "bg-blue-600/10 text-blue-400" : "text-slate-300 hover:bg-slate-800"
-              )}
-            >
-              <span className="flex items-center gap-2">
-                <span className="inline-flex items-center justify-center w-6 h-6 rounded bg-[#171a21]">
-                  <span className="text-[11px] font-semibold">S</span>
-                </span>
-                <span>{t('app.sidebar.steam')}</span>
-              </span>
-              <div className="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.6)]"></div>
-            </button>
+            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2 mt-4">{t('app.sidebar.tags')}</h3>
+            {allTags.length === 0 && (
+               <div className="px-3 py-2 text-xs text-slate-600 italic">No tags created</div>
+            )}
+            {allTags.map(tag => (
+              <button
+                key={tag.id}
+                onClick={() => { 
+                  setActiveTab('home'); 
+                  if (tag.id === selectedTagId) {
+                    setSelectedTagId(null)
+                    setLibraryFilter('all')
+                  } else {
+                    setSelectedTagId(tag.id)
+                    setLibraryFilter(`tag:${tag.id}`)
+                  }
+                }}
+                className={clsx(
+                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm", 
+                  selectedTagId === tag.id ? "bg-emerald-500/10 text-emerald-400" : "text-slate-400 hover:bg-slate-800"
+                )}
+              >
+                <Hash className="w-3 h-3 opacity-70" />
+                <span className="truncate">{tag.name}</span>
+              </button>
+            ))}
+        </div>
+
+
         </div>
 
         {DISCORD_INVITE_URL && (
-          <div className="mt-auto pt-4 border-t border-slate-800/50">
+          <div className="pt-4 mt-4 border-t border-slate-800/50 flex-shrink-0">
              <button
               type="button"
               onClick={() => {
@@ -703,15 +886,15 @@ function App(): JSX.Element {
               </div>
               <div className="flex flex-col items-start text-left">
                 <span className="text-xs font-bold text-[#5865F2] group-hover:text-white transition-colors">Discord</span>
-                <span className="text-[10px] text-slate-400 group-hover:text-blue-100 transition-colors">Join Community</span>
+                <span className="text-[10px] text-slate-400 group-hover:text-primary-100 transition-colors">Join Community</span>
               </div>
               
               {activeTutorial === 'discord' && (
                 <div className="absolute bottom-full left-0 w-64 mb-4 z-50">
-                   <div className="relative bg-slate-900 border border-blue-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100">
+                   <div className="relative bg-slate-900 border border-primary-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100">
                     <div className="absolute -bottom-2 left-8 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-900" />
                     <div className="flex items-center justify-between mb-1">
-                      <div className="font-semibold text-blue-200">
+                      <div className="font-semibold text-primary-200">
                         {t('app.onboarding.socialTitle')}
                       </div>
                       <div className="text-[10px] text-slate-400 border border-slate-600 rounded-full px-2 py-0.5">
@@ -742,7 +925,7 @@ function App(): JSX.Element {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 mr-4 my-4 gap-4">
         {/* Top Bar */}
-        <div className="h-16 glass-panel rounded-2xl grid grid-cols-[1fr_auto_1fr] items-center px-6 shrink-0 z-10 gap-4">
+        <div className="h-16 glass-panel rounded-2xl grid grid-cols-[1fr_auto_1fr] items-center px-6 shrink-0 z-20 gap-4">
             {/* Left: Navigation */}
             <div className="flex items-center gap-8">
                 <button 
@@ -763,10 +946,10 @@ function App(): JSX.Element {
                   </button>
                   {activeTutorial === 'social' && (
                     <div className="absolute left-0 top-8 z-30">
-                      <div className="relative bg-slate-900 border border-blue-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 min-w-[200px]">
+                      <div className="relative bg-slate-900 border border-primary-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 min-w-[200px]">
                         <div className="absolute -top-2 left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-slate-900" />
                         <div className="flex items-center justify-between mb-1">
-                          <div className="font-semibold text-blue-200">
+                          <div className="font-semibold text-primary-200">
                             {t('app.onboarding.socialTitle')}
                           </div>
                           <div className="text-[10px] text-slate-400 border border-slate-600 rounded-full px-2 py-0.5">
@@ -776,13 +959,25 @@ function App(): JSX.Element {
                         <div className="text-[11px] text-slate-300 max-w-xs">
                           {t('app.onboarding.socialTutorialHint')}
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => setActiveTutorial('discord')}
-                          className="mt-2 inline-flex items-center px-2 py-1 rounded bg-blue-600/80 text-[10px] font-medium text-white hover:bg-blue-500"
-                        >
-                          {t('app.onboarding.nextStep')}
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setActiveTutorial('discord')}
+                            className="mt-2 inline-flex items-center px-2 py-1 rounded bg-primary-600/80 text-[10px] font-medium text-white hover:bg-primary-500"
+                          >
+                            {t('app.onboarding.nextStep')}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTutorial(null);
+                            }}
+                            className="mt-2 inline-flex items-center px-2 py-1 rounded border border-slate-700 text-[10px] font-medium text-slate-400 hover:text-white hover:bg-slate-800"
+                          >
+                            {t('app.onboarding.skip')}
+                          </button>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -793,14 +988,14 @@ function App(): JSX.Element {
             <div className="flex justify-center w-full max-w-md mx-auto">
                 <div className="relative group w-full">
                     <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 group-focus-within:text-blue-500 transition-colors"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 group-focus-within:text-primary-500 transition-colors"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
                     </div>
                     <input 
                         type="text" 
                         placeholder={t('app.topbar.searchGames')}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-slate-950/50 border border-slate-800 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 focus:bg-slate-900 transition-all placeholder:text-slate-600 shadow-inner"
+                        className="w-full bg-slate-950/50 border border-slate-800 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:bg-slate-900 transition-all placeholder:text-slate-600 shadow-inner"
                     />
                 </div>
             </div>
@@ -809,7 +1004,7 @@ function App(): JSX.Element {
             <div className="flex items-center gap-4 justify-end">
               <button
                 onClick={() => setIsAddGameOpen(true)}
-                className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-blue-500 transition-colors group"
+                className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-primary-500 transition-colors group"
                 title={t('app.sidebar.addNonSteamGameTitle')}
               >
                 <svg
@@ -834,7 +1029,7 @@ function App(): JSX.Element {
                   onClick={() => {
                     setIsSettingsOpen(true)
                   }}
-                  className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold overflow-hidden cursor-pointer hover:border-blue-500 hover:text-white transition-all"
+                  className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold overflow-hidden cursor-pointer hover:border-primary-500 hover:text-white transition-all"
                 >
                   {user.avatar_url ? (
                     <img src={user.avatar_url} className="w-full h-full object-cover" />
@@ -844,10 +1039,10 @@ function App(): JSX.Element {
                 </div>
                 {activeTutorial === 'accounts' && (
                   <div className="absolute top-11 right-0 z-30">
-                    <div className="relative bg-slate-900 border border-blue-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 max-w-xs text-left">
+                    <div className="relative bg-slate-900 border border-primary-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 max-w-xs text-left">
                       <div className="absolute -top-2 right-8 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-slate-900" />
                       <div className="flex items-center justify-between mb-1">
-                        <div className="font-semibold text-blue-200">
+                        <div className="font-semibold text-primary-200">
                           {t('app.onboarding.accountsTitle')}
                         </div>
                         <div className="text-[10px] text-slate-400 border border-slate-600 rounded-full px-2 py-0.5">
@@ -857,13 +1052,25 @@ function App(): JSX.Element {
                       <div className="text-[11px] text-slate-300">
                         {t('app.onboarding.accountsTutorialHint')}
                       </div>
-                      <button
-                        type="button"
-                        onClick={() => setActiveTutorial('library')}
-                        className="mt-2 inline-flex items-center px-2 py-1 rounded bg-blue-600/80 text-[10px] font-medium text-white hover:bg-blue-500"
-                      >
-                        {t('app.onboarding.nextStep')}
-                      </button>
+                      <div className="flex items-center gap-2 mt-2">
+                        <button
+                          type="button"
+                          onClick={() => setActiveTutorial('library')}
+                          className="inline-flex items-center px-2 py-1 rounded bg-primary-600/80 text-[10px] font-medium text-white hover:bg-primary-500"
+                        >
+                          {t('app.onboarding.nextStep')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setActiveTutorial(null)
+                          }}
+                          className="inline-flex items-center px-2 py-1 rounded border border-slate-700 text-[10px] font-medium text-slate-400 hover:text-white hover:bg-slate-800"
+                        >
+                          {t('app.onboarding.skip')}
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -890,7 +1097,7 @@ function App(): JSX.Element {
                     {homeStats.total > 0 && (
                       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
                         <div className="glass-panel rounded-xl p-4 hover:bg-slate-800/40 transition-all duration-300 group">
-                          <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold group-hover:text-blue-400 transition-colors">{t('app.home.totalGames')}</div>
+                          <div className="text-xs text-slate-400 uppercase tracking-wider font-semibold group-hover:text-primary-400 transition-colors">{t('app.home.totalGames')}</div>
                           <div className="mt-1 text-3xl font-bold text-white group-hover:scale-105 transition-transform origin-left">{homeStats.total}</div>
                           <div className="mt-1 text-xs text-slate-500">
                             {t('app.home.installedCount', { count: homeStats.installed })}
@@ -926,7 +1133,7 @@ function App(): JSX.Element {
                                 <button
                                   key={g.id}
                                   onClick={() => setSelectedGameId(g.id)}
-                                  className="min-w-[180px] bg-slate-900/70 border border-slate-800 rounded-lg p-3 flex gap-3 hover:border-blue-500/60 transition-colors"
+                                  className="min-w-[180px] bg-slate-900/70 border border-slate-800 rounded-lg p-3 flex gap-3 hover:border-primary-500/60 transition-colors"
                                 >
                                   <div className="w-12 h-16 rounded bg-slate-800 overflow-hidden flex-shrink-0">
                                     {g.box_art_url && (
@@ -1126,7 +1333,7 @@ function App(): JSX.Element {
                           strokeWidth="2" 
                           strokeLinecap="round" 
                           strokeLinejoin="round"
-                          className={isNewsSyncing ? "animate-spin text-blue-400" : "text-slate-400"}
+                          className={isNewsSyncing ? "animate-spin text-primary-400" : "text-slate-400"}
                         >
                           <path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/>
                           <path d="M3 3v5h5"/>
@@ -1149,7 +1356,7 @@ function App(): JSX.Element {
                                 <button
                                   type="button"
                                   key={featured.id}
-                                  className="w-full mb-8 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-blue-500/70 hover:shadow-xl hover:shadow-blue-900/30 transition-all text-left focus:outline-none focus:ring-2 focus:ring-blue-500 group"
+                                  className="w-full mb-8 rounded-2xl overflow-hidden bg-slate-900 border border-slate-800 hover:border-primary-500/70 hover:shadow-xl hover:shadow-primary-900/30 transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary-500 group"
                                   aria-label={`Read news article: ${featured.title}`}
                                   onClick={() => {
                                     if (featured.url) {
@@ -1187,7 +1394,7 @@ function App(): JSX.Element {
                                         <div className="w-7 h-7 rounded-full bg-slate-900/80 border border-slate-700 flex items-center justify-center text-[11px] font-semibold uppercase text-slate-200">
                                           {(featured.source || '?')[0]}
                                         </div>
-                                        <div className="text-[11px] md:text-xs text-blue-300">
+                                        <div className="text-[11px] md:text-xs text-primary-300">
                                           {featured.source} • {formatRelativeTime(featured.published_at)}
                                         </div>
                                         <span className="ml-auto text-[10px] md:text-xs px-2 py-0.5 rounded-full bg-slate-900/80 text-slate-300 border border-slate-700">
@@ -1211,7 +1418,7 @@ function App(): JSX.Element {
                                     <button
                                       type="button"
                                       key={item.id}
-                                      className="flex flex-col sm:flex-row bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-blue-500/60 hover:bg-slate-900/80 transition-all text-left focus:outline-none focus:ring-2 focus:ring-blue-500 group"
+                                      className="flex flex-col sm:flex-row bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden hover:border-primary-500/60 hover:bg-slate-900/80 transition-all text-left focus:outline-none focus:ring-2 focus:ring-primary-500 group"
                                       role="listitem"
                                       aria-label={`Read news article: ${item.title}`}
                                       onClick={() => {
@@ -1250,7 +1457,7 @@ function App(): JSX.Element {
                                           <div className="w-6 h-6 rounded-full bg-slate-800 flex items-center justify-center text-[10px] font-semibold uppercase text-slate-200">
                                             {(item.source || '?')[0]}
                                           </div>
-                                          <div className="text-[11px] text-blue-300">
+                                          <div className="text-[11px] text-primary-300">
                                             {item.source} • {formatRelativeTime(item.published_at)}
                                           </div>
                                           <span className="ml-auto text-[10px] px-2 py-0.5 rounded-full bg-slate-900/80 text-slate-300 border border-slate-700">
@@ -1324,8 +1531,20 @@ function App(): JSX.Element {
                       onToggleFavorite={toggleFavorite}
                       onRefresh={handleSteamRefresh}
                     />
-          </div>
-        )}
+                </div>
+            )}
+            {activeTab === 'gog-games' && (
+            <div className="h-full">
+                <GogLibrary 
+                  games={gogGames}
+                  isLoading={isLoadingGogGames}
+                  onPlay={(id) => setSelectedGameId(id)}
+                  onLaunch={(id) => electron.ipcRenderer.invoke('game:launch', id)}
+                  onInstallToggle={handleGogInstallToggle}
+                  onRefresh={handleGogRefresh}
+                />
+            </div>
+          )}
         </div>
       </div>
       {notification && (
@@ -1356,7 +1575,7 @@ function App(): JSX.Element {
                     setShowOnboarding(false)
                     setActiveTutorial('accounts')
                   }}
-                  className="mt-3 text-xs font-medium text-blue-400 hover:text-blue-300"
+                  className="mt-3 text-xs font-medium text-primary-400 hover:text-primary-300"
                 >
                   {t('app.onboarding.showTutorial')}
                 </button>
@@ -1373,7 +1592,7 @@ function App(): JSX.Element {
                     setShowOnboarding(false)
                     setActiveTutorial('library')
                   }}
-                  className="mt-3 text-xs font-medium text-blue-400 hover:text-blue-300"
+                  className="mt-3 text-xs font-medium text-primary-400 hover:text-primary-300"
                 >
                   {t('app.onboarding.showTutorial')}
                 </button>
@@ -1390,7 +1609,7 @@ function App(): JSX.Element {
                     setShowOnboarding(false)
                     setActiveTutorial('social')
                   }}
-                  className="mt-3 text-xs font-medium text-blue-400 hover:text-blue-300"
+                  className="mt-3 text-xs font-medium text-primary-400 hover:text-primary-300"
                 >
                   {t('app.onboarding.showTutorial')}
                 </button>
@@ -1418,13 +1637,15 @@ function App(): JSX.Element {
                   }
                   setShowOnboarding(false)
                 }}
-                className="px-5 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium"
+                className="px-5 py-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-sm font-medium"
               >
                 {t('app.onboarding.primaryAction')}
               </button>
             </div>
           </div>
         </div>
+      )}
+      </>
       )}
     </div>
   )

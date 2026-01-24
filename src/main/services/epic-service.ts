@@ -62,7 +62,7 @@ export class EpicService {
       params.set('client_id', clientId)
       params.set('response_type', 'code')
       params.set('redirect_uri', redirectUri)
-      params.set('scope', 'basic_profile friends_list')
+      params.set('scope', 'basic_profile')
       params.set('state', state)
 
       authWindow.loadURL(`https://www.epicgames.com/id/authorize?${params.toString()}`)
@@ -95,7 +95,7 @@ export class EpicService {
           if (deploymentId) {
             tokenBody.set('deployment_id', deploymentId)
           }
-          tokenBody.set('scope', 'basic_profile friends_list')
+          tokenBody.set('scope', 'basic_profile')
 
           const tokenRes = await fetch('https://api.epicgames.dev/epic/oauth/v2/token', {
             method: 'POST',

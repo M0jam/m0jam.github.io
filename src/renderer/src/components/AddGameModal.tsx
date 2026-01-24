@@ -75,7 +75,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
       <div className="w-full max-w-lg bg-gray-900 rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
-            <Plus className="w-5 h-5 text-blue-400" />
+            <Plus className="w-5 h-5 text-primary-400" />
             {t('addGame.title')}
           </h2>
           <button
@@ -102,7 +102,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t('addGame.gameTitlePlaceholder')}
-                className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                 autoFocus
               />
             </div>
@@ -117,7 +117,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
                   value={executablePath}
                   onChange={(e) => setExecutablePath(e.target.value)}
                   placeholder={t('addGame.executablePlaceholder')}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 px-4 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 px-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                 />
               </div>
               <button
@@ -141,7 +141,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder={t('addGame.coverPlaceholder')}
-                className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
               />
             </div>
             {imageUrl && (
@@ -173,7 +173,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
             <button
               type="submit"
               disabled={isSubmitting || !title || !executablePath}
-              className="px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-blue-500/20"
+              className="px-6 py-2 bg-primary-600 hover:bg-primary-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium rounded-lg transition-all shadow-lg shadow-primary-500/20"
             >
               {isSubmitting ? t('addGame.submitting') : t('addGame.submit')}
             </button>

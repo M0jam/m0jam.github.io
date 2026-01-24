@@ -5,8 +5,16 @@ import fs from 'fs'
 import { playtimeMonitor } from './playtime-monitor'
 import { randomUUID } from 'crypto'
 import { hltbService } from './hltb-service'
+import log from 'electron-log'
+
+// CONSTANTS
+const SESSION_TIMEOUT_MS = 60000 // 1 minute fallback
+const PROCESS_CHECK_INTERVAL_MS = 10000 // 10 seconds
 
 export class GameService {
+  private metadataCache = new Map<string, any>()
+  private searchCache = new Map<string, number>()
+
   constructor() {
     this.registerHandlers()
   }
@@ -50,6 +58,10 @@ export class GameService {
 
     ipcMain.handle('game:add-custom', async (_, payload) => {
       return this.addCustomGame(payload)
+    })
+
+    ipcMain.handle('game:get-intro-suggestions', async () => {
+      return this.getIntroSuggestions()
     })
   }
 
@@ -105,40 +117,131 @@ export class GameService {
         game.metadata = {}
     }
 
-    // If missing metadata and it's a Steam game, fetch it
-    if ((!game.metadata.description || !game.metadata.screenshots) && game.id.startsWith('steam_')) {
-      await this.fetchSteamMetadata(game)
+    const tasks: Promise<any>[] = []
+
+    // 1. Fetch Rich Metadata (Parallel)
+    if (!game.metadata.description || !game.metadata.screenshots) {
+        if (game.id.startsWith('steam_')) {
+            tasks.push(this.fetchSteamMetadata(game))
+        } else {
+            // Also fetch for non-Steam games (GOG, Epic, etc.)
+            tasks.push(this.fetchNonSteamMetadata(game))
+        }
     }
 
-    // Lazy fetch HLTB data if missing
+    // 2. Lazy fetch HLTB data if missing (Parallel)
     if (!game.hltb_main && !game.hltb_extra && !game.hltb_completionist) {
-        hltbService.updateGame(game.id, game.title).then(updated => {
-            if (updated) {
-                // We don't need to block response, next time it will be there.
-                // Or we could try to push update to frontend? 
-                // For now, let it be "eventual consistency" (user reopens modal or it updates next time)
+        tasks.push((async () => {
+            try {
+                const updated = await hltbService.updateGame(game.id, game.title)
+                if (updated) {
+                    // We'll re-fetch the game object at the end anyway
+                }
+            } catch (error) {
+                log.error('Failed to update HLTB data:', error)
             }
-        })
+        })())
     }
 
-    // Re-fetch in case metadata was updated synchronously
-    game = db.prepare('SELECT * FROM games WHERE id = ?').get(gameId) as any
-    if (typeof game.metadata === 'string') {
-      try { game.metadata = JSON.parse(game.metadata) } catch (e) { game.metadata = {} }
+    // Wait for all updates
+    if (tasks.length > 0) {
+        await Promise.all(tasks)
+        
+        // Re-fetch in case metadata/HLTB was updated
+        game = db.prepare('SELECT * FROM games WHERE id = ?').get(gameId) as any
+        if (typeof game.metadata === 'string') {
+          try { game.metadata = JSON.parse(game.metadata) } catch (e) { game.metadata = {} }
+        }
     }
 
     return game
   }
 
   async fetchSteamMetadata(game: any) {
+    const metadata = await this.getSteamMetadata(game.platform_game_id)
+    if (metadata) {
+      const db = dbManager.getDb()
+      db.prepare('UPDATE games SET metadata = ? WHERE id = ?').run(JSON.stringify(metadata), game.id)
+      // Update local object
+      game.metadata = metadata
+    }
+  }
+
+  private async retry<T>(fn: () => Promise<T>, retries = 3, backoff = 1000): Promise<T> {
     try {
-      const appId = game.platform_game_id
-      const response = await fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`)
+      return await fn()
+    } catch (error) {
+      if (retries <= 0) throw error
+      await new Promise(r => setTimeout(r, backoff))
+      return this.retry(fn, retries - 1, backoff * 2)
+    }
+  }
+
+  async fetchNonSteamMetadata(game: any) {
+    try {
+        // 1. Search Steam (or check cache)
+        let appId = this.searchCache.get(game.title)
+        
+        if (!appId) {
+            const searchUrl = `https://store.steampowered.com/api/storesearch/?term=${encodeURIComponent(game.title)}&l=english&cc=US`
+            const searchRes = await this.retry(() => fetch(searchUrl))
+            const searchData = await searchRes.json()
+
+            if (searchData && searchData.items && searchData.items.length > 0) {
+                appId = searchData.items[0].id
+                if (appId) this.searchCache.set(game.title, appId)
+            }
+        }
+
+        if (appId) {
+            const metadata = await this.getSteamMetadata(appId)
+            if (metadata) {
+                const db = dbManager.getDb()
+                
+                let updates = 'metadata = ?'
+                const params = [JSON.stringify(metadata)] as any[]
+                
+                // Update background if missing and we have one from Steam
+                if (!game.background_url && metadata.background) {
+                    updates += ', background_url = ?'
+                    params.push(metadata.background)
+                    game.background_url = metadata.background
+                }
+
+                // Update box_art_url if missing or broken (GOG often has broken/low-res ones)
+                if (metadata.cover) {
+                    // Only update if current is missing or we want to enforce high-quality Steam art
+                    // For GOG, we often get valid but low-res or 404 URLs. 
+                    // Let's prioritize Steam cover if we found a match, as it's high quality (600x900).
+                    updates += ', box_art_url = ?'
+                    params.push(metadata.cover)
+                    game.box_art_url = metadata.cover
+                }
+                
+                params.push(game.id)
+                db.prepare(`UPDATE games SET ${updates} WHERE id = ?`).run(...params)
+                
+                game.metadata = metadata
+            }
+        }
+    } catch (error) {
+        log.error(`[GameService] Failed to fetch non-Steam metadata for ${game.title}:`, error)
+    }
+  }
+
+  async getSteamMetadata(appId: string | number): Promise<any | null> {
+    const cacheKey = String(appId)
+    if (this.metadataCache.has(cacheKey)) {
+        return this.metadataCache.get(cacheKey)
+    }
+
+    try {
+      const response = await this.retry(() => fetch(`https://store.steampowered.com/api/appdetails?appids=${appId}`))
       const data = await response.json()
       
       if (data[appId] && data[appId].success) {
         const details = data[appId].data
-        const metadata = {
+        const result = {
             description: details.short_description,
             about: details.about_the_game,
             developer: details.developers ? details.developers.join(', ') : '',
@@ -147,15 +250,17 @@ export class GameService {
             genres: details.genres ? details.genres.map((g: any) => g.description) : [],
             screenshots: details.screenshots ? details.screenshots.map((s: any) => s.path_thumbnail) : [],
             movies: details.movies ? details.movies.map((m: any) => m.mp4?.['480'] || m.mp4?.max || '').filter(Boolean) : [],
-            requirements: details.pc_requirements || {}
+            requirements: details.pc_requirements || {},
+            background: details.background,
+            cover: `https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/${appId}/library_600x900.jpg`
         }
-
-        const db = dbManager.getDb()
-        db.prepare('UPDATE games SET metadata = ? WHERE id = ?').run(JSON.stringify(metadata), game.id)
+        this.metadataCache.set(cacheKey, result)
+        return result
       }
     } catch (error) {
-      console.error('Failed to fetch Steam metadata:', error)
+      log.error(`[GameService] Failed to fetch Steam metadata for AppID ${appId}:`, error)
     }
+    return null
   }
 
   async launchGame(gameId: string) {
@@ -184,6 +289,24 @@ export class GameService {
         this.watchGameProcess(game, sessionId)
 
         return { success: true }
+    } else if (game.id.startsWith('gog_')) {
+        // Prefer executable if known (scanned), otherwise Galaxy URI
+        if (game.executable_path && fs.existsSync(game.executable_path)) {
+             await shell.openPath(game.executable_path)
+             this.watchGameProcess(game, sessionId)
+             return { success: true }
+        } else {
+             await shell.openExternal(`goggalaxy://launchGame/${game.platform_game_id}`)
+             // Can't watch process if launched via Galaxy URI without knowing exe path
+             // But if we have install_path we might guess
+             if (game.install_path) {
+                 this.watchGameProcess(game, sessionId)
+             } else {
+                 // Fallback: end session after timeout since we can't track
+                 setTimeout(() => playtimeMonitor.trackSessionEnd(sessionId), SESSION_TIMEOUT_MS)
+             }
+             return { success: true }
+        }
     } else if (game.executable_path) {
         await shell.openPath(game.executable_path)
         this.watchGameProcess(game, sessionId)
@@ -199,17 +322,20 @@ export class GameService {
     if (game && gameId.startsWith('steam_')) {
       await shell.openExternal(`steam://install/${game.platform_game_id}`)
       return true
+    } else if (game && gameId.startsWith('gog_')) {
+      await shell.openExternal(`goggalaxy://installGame/${game.platform_game_id}`)
+      return true
     }
     return false
   }
 
+  /**
+   * Monitors a game process to track playtime.
+   * Currently uses a simplified 'tasklist' polling mechanism.
+   */
   private async watchGameProcess(game: any, sessionId: string) {
     // This is a simplified watcher. 
     // In production, we'd use 'ps-list' to find the PID matching the executable in the install folder.
-    // For now, since we don't have ps-list installed and it's a native module, 
-    // we'll simulate active session tracking for the UI demonstration, 
-    // OR we rely on the fact that the user is "playing" until they close the app or launch another?
-    // No, that's bad.
     
     // Better approach without native modules:
     // Use 'tasklist' command on Windows to check if process is running.
@@ -219,13 +345,13 @@ export class GameService {
     if (!game.install_path || !fs.existsSync(game.install_path)) {
         // Can't watch if we don't know where it is.
         // We'll auto-close session after 1 minute as fallback if we can't track.
-        setTimeout(() => playtimeMonitor.trackSessionEnd(sessionId), 60000)
+        setTimeout(() => playtimeMonitor.trackSessionEnd(sessionId), SESSION_TIMEOUT_MS)
         return
     }
 
     const execs = fs.readdirSync(game.install_path).filter(f => f.endsWith('.exe'))
     if (execs.length === 0) {
-        setTimeout(() => playtimeMonitor.trackSessionEnd(sessionId), 60000)
+        setTimeout(() => playtimeMonitor.trackSessionEnd(sessionId), SESSION_TIMEOUT_MS)
         return
     }
 
@@ -233,7 +359,7 @@ export class GameService {
     // Simpler: Just pick the first one for now, or check all of them.
     // Let's check if ANY of them are running.
     
-    console.log(`[GameService] Watching process for ${game.title}... Candidates: ${execs.join(', ')}`)
+    log.info(`[GameService] Watching process for ${game.title}... Candidates: ${execs.join(', ')}`)
 
     const checkInterval = setInterval(async () => {
         const { exec } = require('child_process')
@@ -246,10 +372,10 @@ export class GameService {
                 // Game stopped
                 clearInterval(checkInterval)
                 playtimeMonitor.trackSessionEnd(sessionId)
-                console.log(`[GameService] Session ended for ${game.title}`)
+                log.info(`[GameService] Session ended for ${game.title}`)
             }
         })
-    }, 10000) // Check every 10s
+    }, PROCESS_CHECK_INTERVAL_MS)
   }
 
   async browseGameFiles(gameId: string) {
@@ -270,6 +396,11 @@ export class GameService {
     if (game && gameId.startsWith('steam_')) {
         await shell.openExternal(`steam://uninstall/${game.platform_game_id}`)
         // We don't remove from DB immediately, let the scanner handle it or user refresh
+        return true
+    } else if (game && gameId.startsWith('gog_')) {
+        // GOG Galaxy doesn't have a direct uninstall URI that is widely documented/reliable
+        // Best effort: Open the game view so user can uninstall
+        await shell.openExternal(`goggalaxy://openGameView/${game.platform_game_id}`)
         return true
     }
     return false
@@ -298,6 +429,11 @@ export class GameService {
     if (game && gameId.startsWith('steam_')) {
       await shell.openExternal(`https://store.steampowered.com/app/${game.platform_game_id}`)
       return true
+    } else if (game && gameId.startsWith('gog_')) {
+      await shell.openExternal(`https://www.gog.com/game/${game.platform_game_id}`) // This is a guess, GOG URLs are slug-based.
+      // Better to open Galaxy view
+      await shell.openExternal(`goggalaxy://openGameView/${game.platform_game_id}`)
+      return true
     }
     return false
   }
@@ -310,6 +446,41 @@ export class GameService {
       return true
     }
     return false
+  }
+
+  async getIntroSuggestions() {
+    const db = dbManager.getDb()
+    
+    // 1. Last Played (Installed only)
+    const lastPlayed = db.prepare(`
+      SELECT * FROM games 
+      WHERE is_installed = 1 AND last_played IS NOT NULL 
+      ORDER BY last_played DESC 
+      LIMIT 1
+    `).get() as any
+
+    // 2. Random Game (From ALL games, installed or not)
+    const randomGameRaw = db.prepare(`
+      SELECT * FROM games 
+      ORDER BY RANDOM() 
+      LIMIT 1
+    `).get() as any
+
+    let randomGame = randomGameRaw || null
+    
+    // Parse metadata for both if needed (simplified)
+    const parseMeta = (g: any) => {
+      if (!g) return null
+      if (typeof g.metadata === 'string') {
+        try { g.metadata = JSON.parse(g.metadata) } catch { g.metadata = {} }
+      }
+      return g
+    }
+
+    return {
+      lastPlayed: parseMeta(lastPlayed),
+      random: parseMeta(randomGame)
+    }
   }
 }
 
