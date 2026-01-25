@@ -27,7 +27,7 @@
 | Platform | Download | Checksum (SHA-256) |
 | :--- | :--- | :--- |
 | **Windows** (Installer) | [PlayHub-Setup-1.0.4.exe](https://github.com/M0jam/m0jam.github.io/releases/download/v1.0.4/PlayHub-Setup-1.0.4.exe) | `4B62B22816D093956097D25EC1C2D30C5CB06EFE8E7DA831033EDFFEB114709F` |
-| **Windows** (Portable) | [PlayHub-1.0.4.exe](https://github.com/M0jam/m0jam.github.io/releases/download/v1.0.4/PlayHub-1.0.4.exe) | `...` |
+| **Windows** (Portable) | [PlayHub_Portable_1.0.4.exe](https://github.com/M0jam/m0jam.github.io/releases/download/v1.0.4/PlayHub_Portable_1.0.4.exe) | `B38A9C0F227BD5B873319A9F7538A5002AAD7868B8D096906455995CC1DF0FC2` |
 
 > *Note: If the links above do not work, please visit the [Releases Page](https://github.com/M0jam/m0jam.github.io/releases) directly.*
 
