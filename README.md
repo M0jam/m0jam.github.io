@@ -80,20 +80,27 @@
 
 ## 🗺️ Roadmap
 
-### 🎮 Short-Term
-*   [ ] Refine game library grid layouts.
-*   [ ] Improve Steam sync reliability (uninstall detection).
-*   [ ] Polish profile & settings (avatars, themes).
+### ✅ Completed
+*   [x] **Multi-Launcher Integration**: Full support for Steam, Epic Games, and GOG Galaxy.
+*   [x] **Rich Game Metadata**: Integrated HowLongToBeat (HLTB) and IGDB for playtime stats and descriptions.
+*   [x] **UI/UX Polish**: Dynamic Theme System, Skins, and responsive Grid Layouts.
+*   [x] **Sync Reliability**: Improved uninstall detection and library synchronization for Steam.
+*   [x] **Account Security**: Device disconnect flow, Email verification, and "Forgot Password" functionality.
+*   [x] **Startup Experience**: Custom Splash Screen and optimized boot time.
+*   [x] **User Identity**: Unique username system and avatar management.
 
-### 🧩 Mid-Term
-*   [ ] Smarter home screen suggestions.
-*   [ ] Enhanced tagging (Backlog/Completed).
-*   [ ] Richer game details (metadata, history).
+### 🚧 In Progress
+| Task | Description | Status | Team |
+| :--- | :--- | :--- | :--- |
+| **macOS & Linux Support** | Porting the codebase and native modules to support cross-platform builds. | 🔄 Testing | Core Devs |
+| **Discord Integration** | Implementing Rich Presence to show current game status on Discord. | 🛠️ Development | Backend |
+| **Advanced Tagging** | Custom tags (e.g., "Backlog", "Completed") for better library organization. | 🎨 Design | Frontend |
+| **AI Recommendations** | Developing a local algorithm to suggest games based on play history and time of day. | 🧠 Research | Data Science |
 
-### 🚀 Long-Term
-*   [ ] Integration with more launchers (Epic, GOG).
-*   [ ] Advanced playtime stats.
-*   [ ] AI-powered conservative recommendations.
+### 🚀 Planned / Backlog
+*   [ ] **Cloud Saves**: Sync game saves across devices.
+*   [ ] **Social Hub**: Chat and activity feed with friends.
+*   [ ] **Mobile Companion App**: Manage library from your phone.
 
 ---
 
