@@ -3,9 +3,9 @@
 ![PlayHub Logo](src/renderer/src/assets/top-right-logo.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Build Status](https://img.shields.io/github/actions/workflow/status/yourusername/playhub/build.yml)](https://github.com/yourusername/playhub/actions)
-[![Version](https://img.shields.io/github/v/release/yourusername/playhub)](https://github.com/yourusername/playhub/releases)
-[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://github.com/yourusername/playhub/releases)
+[![Build Status](https://img.shields.io/github/actions/workflow/status/M0jam/m0jam.github.io/build.yml)](https://github.com/M0jam/m0jam.github.io/actions)
+[![Version](https://img.shields.io/github/v/release/M0jam/m0jam.github.io)](https://github.com/M0jam/m0jam.github.io/releases)
+[![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20macOS%20%7C%20Linux-lightgrey)](https://github.com/M0jam/m0jam.github.io/releases)
 
 **PlayHub** is a unified game launcher designed to bring all your games into one beautiful, organized library. Whether you play on Steam, Epic, or have standalone titles, PlayHub helps you decide *what to play* instantly.
 
@@ -26,12 +26,12 @@
 
 | Platform | Download | Checksum (SHA-256) |
 | :--- | :--- | :--- |
-| **Windows** (Installer) | [PlayHub-Setup-1.0.0.exe](https://github.com/yourusername/playhub/releases/latest) | `e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855` |
-| **Windows** (Portable) | [PlayHub-1.0.0.exe](https://github.com/yourusername/playhub/releases/latest) | `...` |
-| **macOS** | [PlayHub-1.0.0.dmg](https://github.com/yourusername/playhub/releases/latest) | `...` |
-| **Linux** | [PlayHub-1.0.0.AppImage](https://github.com/yourusername/playhub/releases/latest) | `...` |
+| **Windows** (Installer) | [PlayHub-Setup-1.0.4.exe](https://github.com/M0jam/m0jam.github.io/releases/latest) | `4B62B22816D093956097D25EC1C2D30C5CB06EFE8E7DA831033EDFFEB114709F` |
+| **Windows** (Portable) | [PlayHub-1.0.4.exe](https://github.com/M0jam/m0jam.github.io/releases/latest) | `...` |
+| **macOS** | [PlayHub-1.0.4.dmg](https://github.com/M0jam/m0jam.github.io/releases/latest) | `...` |
+| **Linux** | [PlayHub-1.0.4.AppImage](https://github.com/M0jam/m0jam.github.io/releases/latest) | `...` |
 
-> *Note: Visit the [Releases Page](https://github.com/yourusername/playhub/releases) for all versions and release notes.*
+> *Note: Visit the [Releases Page](https://github.com/M0jam/m0jam.github.io/releases) for all versions and release notes.*
 
 ---
 
@@ -46,8 +46,8 @@
 
 1.  **Clone the repository**
     ```bash
-    git clone https://github.com/yourusername/playhub.git
-    cd playhub
+    git clone https://github.com/M0jam/m0jam.github.io.git
+    cd m0jam.github.io
     ```
 
 2.  **Install dependencies**
@@ -119,4 +119,4 @@ Distributed under the MIT License. See `LICENSE` for more information.
 
 ## 📞 Contact
 
-Project Link: [https://github.com/yourusername/playhub](https://github.com/yourusername/playhub)
+Project Link: [https://m0jam.github.io/](https://m0jam.github.io/)
