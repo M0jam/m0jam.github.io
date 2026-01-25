@@ -10,7 +10,30 @@ if (app.isPackaged) {
   dotenv.config()
 }
 
-import { electronApp, optimizer, is } from '@electron-toolkit/utils'
+// Handle Portable Mode
+if (process.env.PORTABLE_EXECUTABLE_DIR) {
+  const portableDataPath = join(process.env.PORTABLE_EXECUTABLE_DIR, 'data')
+  app.setPath('userData', portableDataPath)
+  // Ensure session data (cookies, cache) is also stored here if needed, 
+   // but userData covers most Electron data.
+   // We can also set session data path explicitly if needed, but userData is the parent.
+   console.log(`Running in Portable Mode. Data path: ${portableDataPath}`)
+   
+   // Set a flag for other services to detect portable mode
+   process.env.PLAYHUB_PORTABLE = 'true'
+
+   // Redirect electron-log
+   // We need to require it here because imports are hoisted
+   try {
+      const log = require('electron-log')
+      log.transports.file.resolvePathFn = () => join(portableDataPath, 'logs', 'main.log')
+      console.log('Log path redirected to portable directory')
+   } catch (e) {
+      console.error('Failed to configure portable logging:', e)
+   }
+ }
+ 
+ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import { dbManager } from './database'
 import './services/auth-service'
 import './services/steam-scanner'

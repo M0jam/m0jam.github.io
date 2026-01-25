@@ -266,7 +266,7 @@ export class GameService {
   async launchGame(gameId: string) {
     const db = dbManager.getDb()
     const game = db.prepare('SELECT * FROM games WHERE id = ?').get(gameId) as any
-    if (!game) throw new Error('Game not found')
+    if (!game) return { success: false, error: 'Game not found' }
 
     db.prepare('UPDATE games SET last_played = CURRENT_TIMESTAMP WHERE id = ?').run(gameId)
 
@@ -291,29 +291,83 @@ export class GameService {
         return { success: true }
     } else if (game.id.startsWith('gog_')) {
         // Prefer executable if known (scanned), otherwise Galaxy URI
-        if (game.executable_path && fs.existsSync(game.executable_path)) {
-             await shell.openPath(game.executable_path)
-             this.watchGameProcess(game, sessionId)
-             return { success: true }
-        } else {
-             await shell.openExternal(`goggalaxy://launchGame/${game.platform_game_id}`)
-             // Can't watch process if launched via Galaxy URI without knowing exe path
-             // But if we have install_path we might guess
-             if (game.install_path) {
-                 this.watchGameProcess(game, sessionId)
-             } else {
-                 // Fallback: end session after timeout since we can't track
-                 setTimeout(() => playtimeMonitor.trackSessionEnd(sessionId), SESSION_TIMEOUT_MS)
+        if (game.executable_path) {
+             let execPath = game.executable_path
+             
+             // Portable Path Healing
+             if (process.env.PLAYHUB_PORTABLE === 'true' && !fs.existsSync(execPath)) {
+                 execPath = this.resolvePortablePath(execPath)
              }
-             return { success: true }
+
+             if (fs.existsSync(execPath)) {
+                 await shell.openPath(execPath)
+                 // Update game object for watcher
+                 game.executable_path = execPath
+                 game.install_path = join(execPath, '..')
+                 this.watchGameProcess(game, sessionId)
+                 return { success: true }
+             }
         }
-    } else if (game.executable_path) {
-        await shell.openPath(game.executable_path)
-        this.watchGameProcess(game, sessionId)
+        
+        // Fallback to Galaxy URI
+        await shell.openExternal(`goggalaxy://launchGame/${game.platform_game_id}`)
+        // Can't watch process if launched via Galaxy URI without knowing exe path
+        // But if we have install_path we might guess
+        if (game.install_path) {
+             this.watchGameProcess(game, sessionId)
+        } else {
+             // Fallback: end session after timeout since we can't track
+             setTimeout(() => playtimeMonitor.trackSessionEnd(sessionId), SESSION_TIMEOUT_MS)
+        }
         return { success: true }
+    } else if (game.executable_path) {
+        let execPath = game.executable_path
+        
+        // Portable Path Healing
+        if (process.env.PLAYHUB_PORTABLE === 'true' && !fs.existsSync(execPath)) {
+             execPath = this.resolvePortablePath(execPath)
+        }
+
+        if (fs.existsSync(execPath)) {
+            await shell.openPath(execPath)
+            // Update game object for watcher
+            game.executable_path = execPath
+            game.install_path = join(execPath, '..')
+            this.watchGameProcess(game, sessionId)
+            return { success: true }
+        } else {
+            playtimeMonitor.trackSessionEnd(sessionId)
+            return { success: false, error: 'Executable not found' }
+        }
     }
 
     return { success: false, message: 'No launch method available' }
+  }
+
+  private resolvePortablePath(originalPath: string): string {
+    // Attempt to resolve path relative to current drive/portable location
+    try {
+        const portableDir = process.env.PORTABLE_EXECUTABLE_DIR
+        if (!portableDir) return originalPath
+
+        const path = require('path')
+        // Get current drive root from portable dir (e.g. "E:\")
+        const currentRoot = path.parse(portableDir).root
+        // Get original path's root (e.g. "F:\")
+        const originalRoot = path.parse(originalPath).root
+
+        if (currentRoot && originalRoot && currentRoot !== originalRoot) {
+            // Replace drive letter
+            const newPath = originalPath.replace(originalRoot, currentRoot)
+            if (fs.existsSync(newPath)) {
+                log.info(`[Portable] Healed path from ${originalPath} to ${newPath}`)
+                return newPath
+            }
+        }
+    } catch (e) {
+        log.error('[Portable] Failed to resolve portable path', e)
+    }
+    return originalPath
   }
 
   async installGame(gameId: string) {
