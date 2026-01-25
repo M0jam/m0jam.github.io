@@ -34,7 +34,7 @@ jobs:
             // Construct the Discord payload (Embed)
             const payload = {
               username: "PlayHub Bot",
-              avatar_url: "https://raw.githubusercontent.com/M0jam/m0jam.github.io/main/src/renderer/src/assets/top-right-logo.png",
+              avatar_url: "https://raw.githubusercontent.com/M0jam/m0jam.github.io/main/app/src/renderer/src/assets/top-right-logo.png",
               embeds: [{
                 title: `🚀 New Update Available: ${process.env.RELEASE_NAME}`,
                 url: process.env.RELEASE_URL,

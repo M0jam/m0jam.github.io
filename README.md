@@ -45,7 +45,7 @@
 1.  **Clone the repository**
     ```bash
     git clone https://github.com/M0jam/m0jam.github.io.git
-    cd m0jam.github.io
+    cd m0jam.github.io/app
     ```
 
 2.  **Install dependencies**
