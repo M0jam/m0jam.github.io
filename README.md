@@ -1,6 +1,6 @@
 # PlayHub
 
-![PlayHub Logo](src/renderer/src/assets/top-right-logo.png)
+![PlayHub Logo](app/src/renderer/src/assets/top-right-logo.png)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/github/v/release/M0jam/m0jam.github.io)](https://github.com/M0jam/m0jam.github.io/releases)
