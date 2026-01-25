@@ -65,20 +65,48 @@ export class EmailService {
                 <span style="font-family: monospace; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1f2937;">${code}</span>
               </div>
               <p style="font-size: 14px; color: #666;">This code will expire in 10 minutes.</p>
-              <p style="font-size: 14px; color: #666;">If you did not request this, please ignore this email.</p>
-              <p style="color: #666; font-size: 14px; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                Best regards,<br>
-                The PlayHub Team
-              </p>
+              <p style="font-size: 14px; color: #666;">If you did not request this, please ignore this email and ensure your account is secure.</p>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+              <p style="font-size: 12px; color: #999; text-align: center;">Sent by PlayHub App</p>
             </div>
           </div>
         `
       })
-      log.info('Disconnect code sent to:', email, 'Message ID:', info.messageId)
-      return true
-    } catch (error) {
-      log.error('Failed to send disconnect code:', error)
-      throw new Error('Failed to send verification email')
+      return { success: true }
+    } catch (err) {
+      console.error('Failed to send email:', err)
+      return { success: false, error: 'Failed to send verification email' }
+    }
+  }
+
+  async sendPasswordResetCode(username: string, email: string, code: string) {
+    try {
+      const info = await this.transporter.sendMail({
+        from: '"PlayHub Team" <playhub320@gmail.com>',
+        to: email,
+        subject: 'Password Reset Verification 🔒',
+        text: `Hi ${username},\n\nYou requested to reset your PlayHub account password.\n\nYour verification code is: ${code}\n\nThis code will expire in 10 minutes.\nIf you did not request this, please ignore this email.\n\nBest regards,\nThe PlayHub Team`,
+        html: `
+          <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4; color: #333;">
+            <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto;">
+              <h1 style="color: #3b82f6; margin-top: 0;">Password Reset Verification 🔒</h1>
+              <p style="font-size: 16px; line-height: 1.5;">Hi <strong>${username}</strong>,</p>
+              <p style="font-size: 16px; line-height: 1.5;">You requested to reset your PlayHub account password.</p>
+              <div style="background-color: #f3f4f6; padding: 20px; text-align: center; border-radius: 8px; margin: 20px 0;">
+                <span style="font-family: monospace; font-size: 32px; font-weight: bold; letter-spacing: 5px; color: #1f2937;">${code}</span>
+              </div>
+              <p style="font-size: 14px; color: #666;">This code will expire in 10 minutes.</p>
+              <p style="font-size: 14px; color: #666;">If you did not request this, please ignore this email.</p>
+              <hr style="border: 0; border-top: 1px solid #eee; margin: 30px 0;">
+              <p style="font-size: 12px; color: #999; text-align: center;">Sent by PlayHub App</p>
+            </div>
+          </div>
+        `
+      })
+      return { success: true }
+    } catch (err) {
+      console.error('Failed to send email:', err)
+      return { success: false, error: 'Failed to send verification email' }
     }
   }
 }

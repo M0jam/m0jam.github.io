@@ -435,7 +435,24 @@
     "dontHaveAccount": "Don't have an account?",
     "authFailed": "Authentication failed",
     "usernameChangedTitle": "Username Adjusted",
-    "usernameChangedBody": "Your requested username '{old}' was taken. You have been assigned '{new}'."
+    "usernameChangedBody": "Your requested username '{old}' was taken. You have been assigned '{new}'.",
+    "forgotPassword": "Forgot password?",
+    "forgotPasswordTitle": "Reset Password",
+    "forgotPasswordDesc": "Enter your email to receive a verification code.",
+    "sendCode": "Send Code",
+    "sending": "Sending...",
+    "verifyTitle": "Verify Code",
+    "verifyDesc": "Enter the 6-digit code sent to {{email}}.",
+    "verify": "Verify",
+    "verifying": "Verifying...",
+    "newPasswordTitle": "New Password",
+    "newPasswordDesc": "Enter your new password.",
+    "resetPassword": "Reset Password",
+    "resetting": "Resetting...",
+    "backToLogin": "Back to Login",
+    "back": "Back",
+    "passwordResetSuccess": "Password reset successfully! Please login.",
+    "resendCode": "Resend Code"
   },
   "gameDetails": {
     "tabs": {

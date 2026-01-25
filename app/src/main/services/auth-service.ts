@@ -6,6 +6,7 @@ import { emailService } from './email-service'
 
 export class AuthService {
   private disconnectCodes = new Map<string, { code: string; expiresAt: number; attempts: number }>()
+  private resetCodes = new Map<string, { code: string; expiresAt: number; attempts: number }>()
 
   constructor() {
     this.registerHandlers()
@@ -43,6 +44,18 @@ export class AuthService {
 
     ipcMain.handle('auth:verify-disconnect', async (_, { userId, code }) => {
       return this.verifyDisconnect(userId, code)
+    })
+
+    ipcMain.handle('auth:initiate-reset', async (_, { email }) => {
+      return this.initiatePasswordReset(email)
+    })
+
+    ipcMain.handle('auth:verify-reset-code', async (_, { email, code }) => {
+      return this.verifyResetCode(email, code)
+    })
+
+    ipcMain.handle('auth:complete-reset', async (_, { email, code, newPassword }) => {
+      return this.completePasswordReset(email, code, newPassword)
     })
   }
 
@@ -438,6 +451,56 @@ export class AuthService {
     })
 
     tx()
+
+    return { success: true }
+  }
+
+  private async initiatePasswordReset(email: string) {
+    const db = dbManager.getDb()
+    const user = db.prepare('SELECT id, username FROM users WHERE email = ?').get(email) as any
+    if (!user) throw new Error('User not found')
+
+    const code = Math.floor(100000 + Math.random() * 900000).toString()
+    const expiresAt = Date.now() + 10 * 60 * 1000 // 10 minutes
+
+    this.resetCodes.set(email, { code, expiresAt, attempts: 0 })
+
+    await emailService.sendPasswordResetCode(user.username, email, code)
+    return { success: true }
+  }
+
+  private async verifyResetCode(email: string, code: string) {
+    const record = this.resetCodes.get(email)
+    if (!record) throw new Error('No reset request found')
+
+    if (Date.now() > record.expiresAt) {
+      this.resetCodes.delete(email)
+      throw new Error('Code expired')
+    }
+
+    if (record.attempts >= 3) {
+      this.resetCodes.delete(email)
+      throw new Error('Too many failed attempts')
+    }
+
+    if (record.code !== code) {
+      record.attempts++
+      this.resetCodes.set(email, record)
+      throw new Error('Invalid code')
+    }
+
+    return { success: true }
+  }
+
+  private async completePasswordReset(email: string, code: string, newPassword: string) {
+    await this.verifyResetCode(email, code)
+
+    const db = dbManager.getDb()
+    const passwordHash = await this.hashPassword(newPassword)
+
+    db.prepare('UPDATE users SET password_hash = ? WHERE email = ?').run(passwordHash, email)
+    
+    this.resetCodes.delete(email)
 
     return { success: true }
   }
