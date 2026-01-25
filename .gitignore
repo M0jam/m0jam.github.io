@@ -1,3 +1,11 @@
+# PlayHub Specific Artifacts
+PlayHub_Installation_Package.zip
+PlayHub_Setup/
+lint-results.txt
+DiscordTool/dist/
+DiscordTool/out/
+support-server/node_modules/
+
 # Logs
 logs
 *.log
