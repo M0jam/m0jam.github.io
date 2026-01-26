@@ -1,6 +1,15 @@
 import React, { useState } from 'react';
-import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2 } from 'lucide-react';
+import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2, Home, Newspaper, Settings, LayoutGrid } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
+
+const games = [
+  { id: 1, title: "Cyberpunk 2077", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1091500/library_600x900.jpg", year: 2020, developer: "CD Projekt Red", rating: 4.5 },
+  { id: 2, title: "Elden Ring", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1245620/library_600x900.jpg", year: 2022, developer: "FromSoftware", rating: 4.8 },
+  { id: 3, title: "Hades", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1145360/library_600x900.jpg", year: 2020, developer: "Supergiant Games", rating: 4.9 },
+  { id: 4, title: "Stardew Valley", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/413150/library_600x900.jpg", year: 2016, developer: "ConcernedApe", rating: 4.9 },
+  { id: 5, title: "Hollow Knight", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/367520/library_600x900.jpg", year: 2017, developer: "Team Cherry", rating: 4.9 },
+  { id: 6, title: "The Witcher 3", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/292030/library_600x900.jpg", year: 2015, developer: "CD Projekt Red", rating: 4.9 },
+];
 
 function App() {
   const downloadUrl = "https://github.com/M0jam/m0jam.github.io/releases/download/v1.0.4/PlayHub-Setup-1.0.4.exe";
@@ -91,42 +100,87 @@ function App() {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.2, duration: 0.8 }}
-              className="relative mx-auto max-w-5xl rounded-xl bg-slate-900/50 border border-white/10 shadow-2xl overflow-hidden aspect-video group"
+              className="relative mx-auto max-w-5xl rounded-xl bg-slate-900 border border-white/10 shadow-2xl overflow-hidden aspect-video group select-none"
             >
               {/* Window Controls */}
-              <div className="absolute top-0 left-0 right-0 h-10 bg-slate-900 border-b border-white/5 flex items-center px-4 gap-2 z-20">
-                <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
-                <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
-                <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+              <div className="absolute top-0 left-0 right-0 h-10 bg-slate-900 border-b border-white/5 flex items-center justify-between px-4 z-20">
+                <div className="flex gap-2">
+                  <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
+                  <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
+                  <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+                </div>
+                <div className="flex items-center gap-2 opacity-50">
+                   <div className="w-32 h-6 rounded bg-white/5" />
+                </div>
               </div>
               
               {/* UI Content Mockup */}
               <div className="absolute top-10 inset-0 flex">
                 {/* Sidebar */}
-                <div className="w-64 bg-slate-900/80 border-r border-white/5 p-4 flex flex-col gap-4 hidden md:flex">
-                  <div className="h-8 w-32 bg-white/10 rounded-lg animate-pulse" />
-                  <div className="h-4 w-20 bg-white/5 rounded animate-pulse" />
-                  <div className="space-y-2">
-                    {[1,2,3,4].map(i => (
-                      <div key={i} className="h-10 w-full bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer" />
-                    ))}
+                <div className="w-64 bg-slate-950/80 border-r border-white/5 p-4 flex flex-col gap-6 hidden md:flex">
+                  <div className="flex items-center gap-3 px-2">
+                     <div className="w-8 h-8 rounded-lg bg-primary-600/20 border border-primary-500/30" />
+                     <div className="h-4 w-24 bg-white/10 rounded animate-pulse" />
+                  </div>
+                  
+                  <div className="space-y-1">
+                    <SidebarItem icon={<Home size={18} />} label="Home" active />
+                    <SidebarItem icon={<LayoutGrid size={18} />} label="Library" />
+                    <SidebarItem icon={<Newspaper size={18} />} label="News" />
+                    <SidebarItem icon={<Users size={18} />} label="Friends" />
+                  </div>
+                  
+                  <div className="mt-auto">
+                    <SidebarItem icon={<Settings size={18} />} label="Settings" />
                   </div>
                 </div>
+                
                 {/* Main Content */}
-                <div className="flex-1 p-8 bg-slate-950/50 overflow-hidden">
+                <div className="flex-1 p-8 bg-slate-950/50 overflow-hidden relative">
+                   {/* Header */}
+                   <div className="flex items-center justify-between mb-8">
+                      <h2 className="text-2xl font-bold text-white">Library</h2>
+                      <div className="flex gap-3">
+                         <div className="w-8 h-8 rounded-full bg-white/5" />
+                         <div className="w-8 h-8 rounded-full bg-white/5" />
+                      </div>
+                   </div>
+
                   <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
-                    {[1,2,3,4,5,6].map(i => (
+                    {games.map((game) => (
                       <motion.div 
-                        key={i} 
-                        whileHover={{ scale: 1.05, y: -5 }}
-                        className="aspect-[2/3] rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/5 relative group/card cursor-pointer overflow-hidden"
+                        key={game.id} 
+                        whileHover={{ scale: 1.02, y: -5 }}
+                        className="aspect-[2/3] rounded-xl bg-slate-800 border border-white/5 relative group/card cursor-pointer overflow-hidden shadow-lg"
                       >
-                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
-                           <div className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center text-white shadow-lg transform scale-0 group-hover/card:scale-100 transition-transform duration-300">
-                             <Play fill="white" className="ml-1" />
+                         <img 
+                           src={game.cover} 
+                           alt={game.title}
+                           loading="lazy"
+                           className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover/card:scale-110"
+                         />
+                         
+                         {/* Gradient Overlay */}
+                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent opacity-60 group-hover/card:opacity-90 transition-opacity" />
+                         
+                         {/* Play Button Overlay */}
+                         <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover/card:opacity-100 transition-opacity z-10">
+                           <div className="w-14 h-14 rounded-full bg-primary-600 flex items-center justify-center text-white shadow-[0_0_20px_rgba(139,92,246,0.5)] transform scale-0 group-hover/card:scale-100 transition-transform duration-300">
+                             <Play fill="white" className="ml-1 w-6 h-6" />
                            </div>
                          </div>
-                         <div className="absolute bottom-4 left-4 right-4 h-4 bg-white/10 rounded" />
+                         
+                         {/* Metadata */}
+                         <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-2 group-hover/card:translate-y-0 transition-transform">
+                            <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">{game.title}</h3>
+                            <div className="flex items-center justify-between text-xs text-slate-400">
+                               <span>{game.year}</span>
+                               <div className="flex items-center gap-1">
+                                  <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                                  <span>{game.rating}</span>
+                               </div>
+                            </div>
+                         </div>
                       </motion.div>
                     ))}
                   </div>
@@ -280,6 +334,15 @@ function App() {
       </footer>
     </div>
   );
+}
+
+function SidebarItem({ icon, label, active }: { icon: React.ReactNode, label: string, active?: boolean }) {
+  return (
+    <div className={`flex items-center gap-3 px-3 py-2 rounded-lg transition-colors cursor-pointer ${active ? 'bg-primary-600/10 text-primary-400' : 'text-slate-400 hover:text-white hover:bg-white/5'}`}>
+      {icon}
+      <span className="font-medium text-sm">{label}</span>
+    </div>
+  )
 }
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
