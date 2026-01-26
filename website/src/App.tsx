@@ -1,5 +1,5 @@
-import React from 'react';
-import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart } from 'lucide-react';
+import React, { useState } from 'react';
+import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2 } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
 function App() {
@@ -52,7 +52,7 @@ function App() {
           >
             <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm">
               <Star size={16} className="text-yellow-400 fill-yellow-400" />
-              <span className="text-sm font-medium text-slate-300">Trusted by 10,000+ Gamers</span>
+              <span className="text-sm font-medium text-slate-300">Open Source Community</span>
             </div>
 
             <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 bg-gradient-to-br from-white via-white to-slate-400 bg-clip-text text-transparent leading-tight">
@@ -94,7 +94,7 @@ function App() {
               className="relative mx-auto max-w-5xl rounded-xl bg-slate-900/50 border border-white/10 shadow-2xl overflow-hidden aspect-video group"
             >
               {/* Window Controls */}
-              <div className="absolute top-0 left-0 right-0 h-10 bg-slate-900 border-b border-white/5 flex items-center px-4 gap-2">
+              <div className="absolute top-0 left-0 right-0 h-10 bg-slate-900 border-b border-white/5 flex items-center px-4 gap-2 z-20">
                 <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
                 <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
                 <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
@@ -103,29 +103,38 @@ function App() {
               {/* UI Content Mockup */}
               <div className="absolute top-10 inset-0 flex">
                 {/* Sidebar */}
-                <div className="w-64 bg-slate-900/80 border-r border-white/5 p-4 flex flex-col gap-4">
+                <div className="w-64 bg-slate-900/80 border-r border-white/5 p-4 flex flex-col gap-4 hidden md:flex">
                   <div className="h-8 w-32 bg-white/10 rounded-lg animate-pulse" />
                   <div className="h-4 w-20 bg-white/5 rounded animate-pulse" />
                   <div className="space-y-2">
                     {[1,2,3,4].map(i => (
-                      <div key={i} className="h-10 w-full bg-white/5 rounded-lg" />
+                      <div key={i} className="h-10 w-full bg-white/5 rounded-lg hover:bg-white/10 transition-colors cursor-pointer" />
                     ))}
                   </div>
                 </div>
                 {/* Main Content */}
-                <div className="flex-1 p-8 bg-slate-950/50">
-                  <div className="grid grid-cols-3 gap-6">
+                <div className="flex-1 p-8 bg-slate-950/50 overflow-hidden">
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-6">
                     {[1,2,3,4,5,6].map(i => (
-                      <div key={i} className="aspect-[2/3] rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/5 relative group-hover:scale-[1.02] transition-transform duration-500">
+                      <motion.div 
+                        key={i} 
+                        whileHover={{ scale: 1.05, y: -5 }}
+                        className="aspect-[2/3] rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/5 relative group/card cursor-pointer overflow-hidden"
+                      >
+                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/card:opacity-100 transition-opacity flex items-center justify-center backdrop-blur-sm">
+                           <div className="w-12 h-12 rounded-full bg-primary-600 flex items-center justify-center text-white shadow-lg transform scale-0 group-hover/card:scale-100 transition-transform duration-300">
+                             <Play fill="white" className="ml-1" />
+                           </div>
+                         </div>
                          <div className="absolute bottom-4 left-4 right-4 h-4 bg-white/10 rounded" />
-                      </div>
+                      </motion.div>
                     ))}
                   </div>
                 </div>
               </div>
 
               {/* Overlay Gradient */}
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none z-10" />
             </motion.div>
           </motion.div>
         </div>
@@ -133,11 +142,10 @@ function App() {
 
       {/* Stats Section */}
       <div className="border-y border-white/5 bg-white/[0.02]">
-        <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-          <StatItem label="Downloads" value="10k+" />
-          <StatItem label="Games Supported" value="100k+" />
+        <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-3 gap-8 text-center">
+          <StatItem label="Platforms" value="3+" />
+          <StatItem label="Games Supported" value="Unlimited" />
           <StatItem label="Open Source" value="100%" />
-          <StatItem label="Avg Rating" value="4.9/5" />
         </div>
       </div>
 
@@ -247,18 +255,9 @@ function App() {
           <h2 className="text-4xl md:text-5xl font-bold mb-8">Ready to organize your chaos?</h2>
           <p className="text-xl text-slate-400 mb-12">Join thousands of gamers who have simplified their library.</p>
           
-          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto mb-16">
-            <input 
-              type="email" 
-              placeholder="Enter your email for updates" 
-              className="px-6 py-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-primary-500 w-full"
-            />
-            <button className="px-8 py-4 bg-white text-slate-950 font-bold rounded-xl hover:bg-slate-200 transition-colors">
-              Subscribe
-            </button>
-          </div>
+          <NewsletterForm />
 
-          <div className="flex items-center justify-center gap-8 text-slate-400">
+          <div className="flex items-center justify-center gap-8 text-slate-400 mt-16">
             <a href="#" className="hover:text-white transition-colors"><Twitter /></a>
             <a href="#" className="hover:text-white transition-colors"><Github /></a>
             <a href="#" className="hover:text-white transition-colors"><MessageCircle /></a>
@@ -336,6 +335,78 @@ function ComparisonRow({ feature, value, otherValue }: { feature: string, value?
       </td>
     </tr>
   )
+}
+
+function NewsletterForm() {
+  const [email, setEmail] = useState('');
+  const [status, setStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email) return;
+
+    setStatus('loading');
+
+    try {
+      // In a real Netlify deployment, this calls the function.
+      // For static demo, we might simulate success if function not found, but we will implement the function.
+      const res = await fetch('/.netlify/functions/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
+      });
+
+      if (res.ok) {
+        setStatus('success');
+        setEmail('');
+      } else {
+        throw new Error('Failed to subscribe');
+      }
+    } catch (error) {
+      console.error(error);
+      setStatus('error');
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <motion.div 
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="max-w-md mx-auto p-6 bg-green-500/10 border border-green-500/20 rounded-2xl text-green-400 flex items-center gap-3 justify-center"
+      >
+        <Check size={20} />
+        <span className="font-medium">Thanks for subscribing! Check your inbox.</span>
+      </motion.div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto mb-16 relative">
+      <input 
+        type="email" 
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+        placeholder="Enter your email for updates" 
+        className="px-6 py-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-primary-500 w-full disabled:opacity-50"
+        disabled={status === 'loading'}
+        required
+      />
+      <button 
+        type="submit"
+        disabled={status === 'loading'}
+        className="px-8 py-4 bg-white text-slate-950 font-bold rounded-xl hover:bg-slate-200 transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center min-w-[140px]"
+      >
+        {status === 'loading' ? <Loader2 className="animate-spin" /> : 'Subscribe'}
+      </button>
+      
+      {status === 'error' && (
+        <div className="absolute -bottom-8 left-0 right-0 text-red-400 text-sm font-medium">
+          Something went wrong. Please try again.
+        </div>
+      )}
+    </form>
+  );
 }
 
 export default App;
