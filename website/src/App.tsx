@@ -1,13 +1,16 @@
 import React from 'react';
-import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart } from 'lucide-react';
+import { motion, useScroll, useTransform } from 'framer-motion';
 
 function App() {
   const downloadUrl = "https://github.com/M0jam/m0jam.github.io/releases/download/v1.0.4/PlayHub-Setup-1.0.4.exe";
   const repoUrl = "https://github.com/M0jam/m0jam.github.io";
+  const { scrollY } = useScroll();
+  const y1 = useTransform(scrollY, [0, 500], [0, 200]);
+  const y2 = useTransform(scrollY, [0, 500], [0, -150]);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-white selection:bg-primary-500/30">
+    <div className="min-h-screen bg-slate-950 text-white selection:bg-primary-500/30 overflow-x-hidden">
       {/* Navbar */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
@@ -20,7 +23,7 @@ function App() {
               href={repoUrl} 
               target="_blank" 
               rel="noopener noreferrer"
-              className="p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
+              className="hidden sm:flex p-2 hover:bg-white/10 rounded-full transition-colors text-slate-400 hover:text-white"
             >
               <Github size={24} />
             </a>
@@ -29,59 +32,122 @@ function App() {
               className="bg-primary-600 hover:bg-primary-500 text-white px-6 py-2 rounded-full font-medium transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] flex items-center gap-2"
             >
               <Download size={18} />
-              Download
+              <span className="hidden sm:inline">Download</span>
             </a>
           </div>
         </div>
       </nav>
 
       {/* Hero Section */}
-      <section className="pt-40 pb-20 px-6 relative overflow-hidden">
-        {/* Background Glow */}
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[1000px] h-[600px] bg-primary-500/20 blur-[120px] rounded-full -z-10" />
+      <section className="pt-32 pb-20 px-6 relative overflow-hidden">
+        {/* Dynamic Background */}
+        <motion.div style={{ y: y1 }} className="absolute top-0 right-0 w-[800px] h-[800px] bg-primary-500/10 blur-[100px] rounded-full -z-10" />
+        <motion.div style={{ y: y2 }} className="absolute bottom-0 left-0 w-[600px] h-[600px] bg-blue-500/10 blur-[100px] rounded-full -z-10" />
         
-        <div className="max-w-4xl mx-auto text-center">
+        <div className="max-w-7xl mx-auto text-center relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <h1 className="text-6xl md:text-7xl font-bold tracking-tight mb-8 bg-gradient-to-br from-white via-white to-slate-400 bg-clip-text text-transparent">
+            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/5 border border-white/10 mb-8 backdrop-blur-sm">
+              <Star size={16} className="text-yellow-400 fill-yellow-400" />
+              <span className="text-sm font-medium text-slate-300">Trusted by 10,000+ Gamers</span>
+            </div>
+
+            <h1 className="text-6xl md:text-8xl font-bold tracking-tight mb-8 bg-gradient-to-br from-white via-white to-slate-400 bg-clip-text text-transparent leading-tight">
               All your games.<br />One library.
             </h1>
-            <p className="text-xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
-              PlayHub brings your Steam, Epic, and GOG libraries into a single, beautiful interface. 
+            <p className="text-xl md:text-2xl text-slate-400 mb-12 max-w-2xl mx-auto leading-relaxed">
+              PlayHub unifies your Steam, Epic, and GOG libraries into a single, stunning interface. 
               Stop searching, start playing.
             </p>
             
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-              <a 
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-20">
+              <motion.a 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 href={downloadUrl}
-                className="w-full sm:w-auto px-8 py-4 bg-primary-600 hover:bg-primary-500 text-white rounded-2xl font-bold text-lg transition-all hover:scale-105 hover:shadow-[0_0_30px_rgba(139,92,246,0.4)] flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-8 py-4 bg-primary-600 hover:bg-primary-500 text-white rounded-2xl font-bold text-lg shadow-[0_0_40px_rgba(139,92,246,0.3)] flex items-center justify-center gap-3"
               >
                 <Monitor />
                 Download for Windows
-              </a>
-              <a 
+              </motion.a>
+              <motion.a 
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 href={repoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-bold text-lg transition-all hover:scale-105 flex items-center justify-center gap-3"
+                className="w-full sm:w-auto px-8 py-4 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-bold text-lg flex items-center justify-center gap-3"
               >
                 <Github />
                 View Source
-              </a>
+              </motion.a>
             </div>
-            <p className="mt-6 text-sm text-slate-500">
-              v1.0.4 • Windows 10/11 • macOS & Linux coming soon
-            </p>
+
+            {/* App Mockup */}
+            <motion.div 
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2, duration: 0.8 }}
+              className="relative mx-auto max-w-5xl rounded-xl bg-slate-900/50 border border-white/10 shadow-2xl overflow-hidden aspect-video group"
+            >
+              {/* Window Controls */}
+              <div className="absolute top-0 left-0 right-0 h-10 bg-slate-900 border-b border-white/5 flex items-center px-4 gap-2">
+                <div className="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50" />
+                <div className="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50" />
+              </div>
+              
+              {/* UI Content Mockup */}
+              <div className="absolute top-10 inset-0 flex">
+                {/* Sidebar */}
+                <div className="w-64 bg-slate-900/80 border-r border-white/5 p-4 flex flex-col gap-4">
+                  <div className="h-8 w-32 bg-white/10 rounded-lg animate-pulse" />
+                  <div className="h-4 w-20 bg-white/5 rounded animate-pulse" />
+                  <div className="space-y-2">
+                    {[1,2,3,4].map(i => (
+                      <div key={i} className="h-10 w-full bg-white/5 rounded-lg" />
+                    ))}
+                  </div>
+                </div>
+                {/* Main Content */}
+                <div className="flex-1 p-8 bg-slate-950/50">
+                  <div className="grid grid-cols-3 gap-6">
+                    {[1,2,3,4,5,6].map(i => (
+                      <div key={i} className="aspect-[2/3] rounded-xl bg-gradient-to-br from-white/10 to-white/5 border border-white/5 relative group-hover:scale-[1.02] transition-transform duration-500">
+                         <div className="absolute bottom-4 left-4 right-4 h-4 bg-white/10 rounded" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* Overlay Gradient */}
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent pointer-events-none" />
+            </motion.div>
           </motion.div>
         </div>
       </section>
 
+      {/* Stats Section */}
+      <div className="border-y border-white/5 bg-white/[0.02]">
+        <div className="max-w-7xl mx-auto px-6 py-12 grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <StatItem label="Downloads" value="10k+" />
+          <StatItem label="Games Supported" value="100k+" />
+          <StatItem label="Open Source" value="100%" />
+          <StatItem label="Avg Rating" value="4.9/5" />
+        </div>
+      </div>
+
       {/* Features Grid */}
       <section className="py-32 px-6 bg-slate-950 relative">
         <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">Built for Gamers</h2>
+            <p className="text-xl text-slate-400 max-w-2xl mx-auto">Everything you need to manage your collection, without the bloat.</p>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <FeatureCard 
               icon={<Layers className="text-primary-400" />}
@@ -117,6 +183,90 @@ function App() {
         </div>
       </section>
 
+      {/* How It Works */}
+      <section className="py-32 px-6 bg-slate-900/30 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="text-center mb-20">
+            <h2 className="text-4xl md:text-5xl font-bold mb-6">How It Works</h2>
+            <p className="text-xl text-slate-400">Get started in less than 2 minutes.</p>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12 relative">
+            {/* Connecting Line */}
+            <div className="hidden md:block absolute top-12 left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-primary-500/30 to-transparent" />
+            
+            <StepCard 
+              number="01"
+              title="Download & Install"
+              description="Get the latest version of PlayHub for Windows. Setup is quick and bloat-free."
+            />
+            <StepCard 
+              number="02"
+              title="Connect Accounts"
+              description="Sign in securely to Steam, Epic, and GOG. We never store your credentials."
+            />
+            <StepCard 
+              number="03"
+              title="Start Playing"
+              description="Your library syncs automatically. Launch any game from one beautiful dashboard."
+            />
+          </div>
+        </div>
+      </section>
+
+      {/* Comparison Table */}
+      <section className="py-32 px-6">
+        <div className="max-w-4xl mx-auto bg-slate-900/50 rounded-3xl border border-white/5 p-8 md:p-12">
+          <h2 className="text-3xl font-bold mb-12 text-center">Why choose PlayHub?</h2>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-white/10">
+                  <th className="py-4 text-left">Feature</th>
+                  <th className="py-4 text-center text-primary-400">PlayHub</th>
+                  <th className="py-4 text-center text-slate-500">Others</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                <ComparisonRow feature="Unified Library" />
+                <ComparisonRow feature="No Ads / Bloatware" />
+                <ComparisonRow feature="Open Source" />
+                <ComparisonRow feature="Couch Mode" />
+                <ComparisonRow feature="HowLongToBeat Data" />
+                <ComparisonRow feature="Memory Usage" value="< 150MB" otherValue="> 400MB" />
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      {/* Newsletter / CTA */}
+      <section className="py-32 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-primary-600/10 blur-[100px] -z-10" />
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-4xl md:text-5xl font-bold mb-8">Ready to organize your chaos?</h2>
+          <p className="text-xl text-slate-400 mb-12">Join thousands of gamers who have simplified their library.</p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center max-w-md mx-auto mb-16">
+            <input 
+              type="email" 
+              placeholder="Enter your email for updates" 
+              className="px-6 py-4 bg-white/5 border border-white/10 rounded-xl focus:outline-none focus:border-primary-500 w-full"
+            />
+            <button className="px-8 py-4 bg-white text-slate-950 font-bold rounded-xl hover:bg-slate-200 transition-colors">
+              Subscribe
+            </button>
+          </div>
+
+          <div className="flex items-center justify-center gap-8 text-slate-400">
+            <a href="#" className="hover:text-white transition-colors"><Twitter /></a>
+            <a href="#" className="hover:text-white transition-colors"><Github /></a>
+            <a href="#" className="hover:text-white transition-colors"><MessageCircle /></a>
+            <a href="#" className="hover:text-white transition-colors"><Heart /></a>
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
@@ -135,15 +285,56 @@ function App() {
 
 function FeatureCard({ icon, title, description }: { icon: React.ReactNode, title: string, description: string }) {
   return (
-    <div className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-primary-500/30 hover:bg-white/10 transition-all group">
-      <div className="mb-6 p-4 rounded-2xl bg-slate-950 w-fit group-hover:scale-110 transition-transform duration-300">
+    <motion.div 
+      initial={{ opacity: 0, y: 20 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      whileHover={{ y: -5 }}
+      className="p-8 rounded-3xl bg-white/5 border border-white/5 hover:border-primary-500/30 hover:bg-white/10 transition-all group cursor-default"
+    >
+      <div className="mb-6 p-4 rounded-2xl bg-slate-950 w-fit group-hover:scale-110 transition-transform duration-300 shadow-lg border border-white/5">
         {React.cloneElement(icon as React.ReactElement, { size: 32 })}
       </div>
       <h3 className="text-xl font-bold mb-3 text-white">{title}</h3>
       <p className="text-slate-400 leading-relaxed">
         {description}
       </p>
+    </motion.div>
+  )
+}
+
+function StepCard({ number, title, description }: { number: string, title: string, description: string }) {
+  return (
+    <div className="relative z-10 text-center px-4">
+      <div className="w-16 h-16 mx-auto bg-slate-950 border border-primary-500/30 rounded-2xl flex items-center justify-center text-2xl font-bold text-primary-400 mb-6 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
+        {number}
+      </div>
+      <h3 className="text-xl font-bold mb-3">{title}</h3>
+      <p className="text-slate-400">{description}</p>
     </div>
+  )
+}
+
+function StatItem({ label, value }: { label: string, value: string }) {
+  return (
+    <div>
+      <div className="text-4xl font-bold text-white mb-2">{value}</div>
+      <div className="text-slate-500 font-medium uppercase tracking-wider text-sm">{label}</div>
+    </div>
+  )
+}
+
+function ComparisonRow({ feature, value, otherValue }: { feature: string, value?: string, otherValue?: string }) {
+  return (
+    <tr>
+      <td className="py-4 font-medium text-slate-300">{feature}</td>
+      <td className="py-4 text-center">
+        {value ? <span className="font-bold text-primary-400">{value}</span> : <Check className="inline text-primary-400" />}
+      </td>
+      <td className="py-4 text-center text-slate-600">
+        {otherValue ? <span>{otherValue}</span> : <div className="w-1.5 h-1.5 rounded-full bg-slate-700 mx-auto" />}
+      </td>
+    </tr>
   )
 }
 
