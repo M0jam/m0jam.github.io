@@ -171,16 +171,16 @@ function App() {
                          </div>
                          
                          {/* Metadata */}
-                         <div className="absolute bottom-0 left-0 right-0 p-4 transform translate-y-2 group-hover/card:translate-y-0 transition-transform">
-                            <h3 className="text-white font-bold text-lg leading-tight mb-1 truncate">{game.title}</h3>
-                            <div className="flex items-center justify-between text-xs text-slate-400">
-                               <span>{game.year}</span>
-                               <div className="flex items-center gap-1">
-                                  <Star size={12} className="text-yellow-400 fill-yellow-400" />
-                                  <span>{game.rating}</span>
-                               </div>
-                            </div>
-                         </div>
+                        <div className="absolute bottom-0 left-0 right-0 p-4 pt-12 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent">
+                           <h3 className="text-white font-bold text-lg leading-tight mb-2 truncate drop-shadow-md">{game.title}</h3>
+                           <div className="flex items-center justify-between text-xs font-medium">
+                              <span className="text-slate-300 bg-black/40 px-2 py-1 rounded backdrop-blur-sm border border-white/5">{game.year}</span>
+                              <div className="flex items-center gap-1.5 text-slate-300 bg-black/40 px-2 py-1 rounded backdrop-blur-sm border border-white/5">
+                                 <Star size={12} className="text-yellow-400 fill-yellow-400" />
+                                 <span>{game.rating}</span>
+                              </div>
+                           </div>
+                        </div>
                       </motion.div>
                     ))}
                   </div>
