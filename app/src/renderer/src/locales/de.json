@@ -19,6 +19,33 @@
     "onboardingResetTitle": "Onboarding erneut anzeigen",
       "onboardingResetDescription": "Setzt die Erste-Schritte-Hilfe zurück, damit sie beim nächsten Öffnen von PlayHub erneut erscheint.",
       "onboardingResetButton": "Onboarding erneut anzeigen",
+    "backup": {
+      "copyToClipboard": "Backup in Zwischenablage kopieren",
+      "restoreFromJson": "Aus JSON wiederherstellen",
+      "exportReady": "Backup bereit (oben kopieren)",
+      "exportCopied": "Backup in Zwischenablage kopiert!",
+      "importSuccess": "Wiederherstellung erfolgreich! Bitte PlayHub neu starten.",
+      "importFailed": "Wiederherstellung fehlgeschlagen: Ungültiges JSON.",
+      "placeholder": "Backup-JSON hier einfügen..."
+    },
+    "viewMode": {
+        "grid": "Standard-Ansicht",
+        "couch": "Couch-Modus"
+    },
+    "timeFilter": {
+        "label": "Zeitbudget",
+        "all": "Alle Längen",
+        "short": "Kurz (< 5h)",
+        "medium": "Mittel (5-20h)",
+        "long": "Lang (> 20h)"
+    },
+    "onboardingHints": {
+        "title": "Erste Schritte",
+        "connect": "Verbinde deine Konten in den Einstellungen, um deine Bibliothek zu synchronisieren.",
+        "play": "Starte dein erstes Spiel, um Spielzeit zu erfassen!",
+        "tags": "Rechtsklicke auf ein Spiel, um es mit Tags zu organisieren.",
+        "dismiss": "Verstanden"
+    },
     "sidebar": {
       "title": "Einstellungen",
       "account": "Konto",
@@ -197,7 +224,46 @@
       "updateToastReminderSaved": "Wir erinnern dich in etwa {{days}} Tag{{suffix}} erneut.",
       "updateToastReminderError": "Erinnerungs-Einstellung konnte nicht gespeichert werden.",
       "updateToastDownloadFailed": "Update-Download konnte nicht gestartet werden. Bitte überprüfe deine Verbindung und versuche es erneut.",
-      "onboardingResetSuccess": "Das Onboarding wurde zurückgesetzt und wird beim nächsten Start wieder angezeigt."
+      "onboardingResetSuccess": "Das Onboarding wurde zurückgesetzt und wird beim nächsten Start wieder angezeigt.",
+      "dashboard": {
+        "greeting": {
+          "morning": "Guten Morgen",
+          "afternoon": "Guten Tag",
+          "evening": "Guten Abend"
+        },
+        "subtitle": "Bereit für dein nächstes Abenteuer?",
+        "customize": "Dashboard anpassen",
+        "widgets": "Widgets",
+        "widget": {
+          "showStats": "Statistiken",
+          "showRecent": "Zuletzt gespielt",
+          "showNews": "Neuigkeiten",
+          "showRecommendation": "Empfehlung",
+          "showFriends": "Freunde",
+          "showQuickAccess": "Schnellzugriff",
+          "showSystemStatus": "Systemstatus"
+        },
+        "stats": {
+          "games": "Spiele",
+          "playtime": "Stunden",
+          "hours": "Stunden",
+          "installed": "Bereit",
+          "completed": "Abgeschlossen"
+        },
+        "recentGames": "Weiterspielen",
+        "viewAll": "Bibliothek",
+        "play": "Spielen",
+        "noRecent": "Keine kürzlich gespielten Spiele",
+        "news": "Neuigkeiten",
+        "viewNews": "Alle News",
+        "noNews": "Derzeit keine Neuigkeiten verfügbar.",
+        "recommended": "Für dich empfohlen",
+        "playNow": "Jetzt spielen",
+        "friends": "Freunde-Aktivität",
+        "noFriendsOnline": "Keine Freunde online",
+        "quickAccess": "Schnellzugriff",
+        "systemStatus": "Systemstatus"
+      }
     }
   },
   "app": {
@@ -219,7 +285,7 @@
     "topbar": {
       "news": "News",
       "social": "Social",
-      "searchGames": "Spiele suchen...",
+      "searchGames": "Spiele suchen... (z.B. status:Backlog platform:steam)",
       "online": "Online",
       "joinDiscordTitle": "PlayHub-Discord beitreten"
     },
@@ -512,5 +578,16 @@
   "errors": {
     "steamLibraryLoad": "Steam-Bibliothek konnte nicht geladen werden",
     "platformGamesLoad": "Spiele für diese Plattform konnten nicht geladen werden"
+  },
+  "viewMode": {
+    "grid": "Rasteransicht",
+    "couch": "Couch-Modus"
+  },
+  "timeFilter": {
+    "label": "Zeitbudget",
+    "all": "Jede Zeit",
+    "short": "Kurz (< 5h)",
+    "medium": "Mittel (5-20h)",
+    "long": "Lang (> 20h)"
   }
 }

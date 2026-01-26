@@ -16,9 +16,10 @@ interface GameCardProps {
   onChangeStatus?: (id: string, status: string | null) => void
   onMouseEnter?: () => void
   onMouseLeave?: () => void
+  showDetails?: boolean
 }
 
-export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMouseEnter, onMouseLeave }: GameCardProps) {
+export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMouseEnter, onMouseLeave, showDetails = true }: GameCardProps) {
   const [imageError, setImageError] = useState(false)
   const [imgSrc, setImgSrc] = useState(game.box_art_url)
   const [isLoading, setIsLoading] = useState(!!game.box_art_url)
@@ -79,7 +80,7 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
       )}
       
       <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
-          {onChangeStatus && (
+          {onChangeStatus && showDetails && (
             <div className="absolute top-2 left-2">
               <select
                 value={game.status_tag || ''}
@@ -101,6 +102,7 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
             </div>
           )}
           
+          {showDetails && (
           <button 
              onClick={(e) => { e.stopPropagation(); onToggleFavorite(game.id) }}
              className={clsx("absolute top-2 right-2 w-8 h-8 flex items-center justify-center rounded-full backdrop-blur-md transition-all z-30", game.is_favorite ? "text-red-500 bg-slate-900/80 shadow-lg" : "text-slate-300 bg-slate-900/60 hover:bg-slate-900/90 hover:text-white")}
@@ -108,6 +110,7 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
            >
              <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={game.is_favorite ? "currentColor" : "none"} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
            </button>
+           )}
 
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transform scale-0 group-hover:scale-100 transition-transform duration-300">
             <div className="w-12 h-12 rounded-full bg-primary-600/90 text-white flex items-center justify-center shadow-lg shadow-primary-600/40 backdrop-blur-sm">
@@ -117,8 +120,11 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
             </div>
           </div>
           <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h3 className="text-white font-bold text-sm leading-tight text-center drop-shadow-md transform translate-y-4 group-hover:translate-y-0 transition-transform duration-300">{game.title}</h3>
-              {game.is_installed && (
+              <h3 className={clsx(
+                  "text-white font-bold leading-tight text-center drop-shadow-md transform transition-transform duration-300",
+                  showDetails ? "text-sm translate-y-4 group-hover:translate-y-0" : "text-lg translate-y-0"
+              )}>{game.title}</h3>
+              {game.is_installed && showDetails && (
                   <div className="flex justify-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
                       <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full backdrop-blur-sm">Installed</span>
                   </div>

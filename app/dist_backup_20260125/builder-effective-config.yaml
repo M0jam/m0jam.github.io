@@ -1,0 +1,45 @@
+directories:
+  output: dist
+  buildResources: build
+appId: com.playhub.app
+productName: PlayHub
+releaseInfo:
+  releaseNotesFile: release-notes.md
+win:
+  target:
+    - target: nsis
+      arch:
+        - x64
+    - target: portable
+      arch:
+        - x64
+portable:
+  artifactName: ${productName}_Portable_${version}.exe
+  requestExecutionLevel: user
+  unpackDirName: PlayHubPortable
+compression: maximum
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  perMachine: true
+  deleteAppDataOnUninstall: true
+  displayLanguageSelector: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+  shortcutName: PlayHub
+linux:
+  icon: build/icon.png
+  target:
+    - AppImage
+    - deb
+mac:
+  icon: build/icon.icns
+  target:
+    - dmg
+    - zip
+publish:
+  - provider: github
+    owner: M0jam
+    repo: m0jam.github.io
+files: []
+electronVersion: 29.4.6

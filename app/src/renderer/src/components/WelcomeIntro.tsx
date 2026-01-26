@@ -66,7 +66,9 @@ export function WelcomeIntro({ username, onComplete, onSelectGame, initialData }
 
   // If no games installed, skip intro
   if (!suggestions.lastPlayed && !suggestions.random) {
-    onComplete()
+    // Use a timeout to ensure the render cycle completes before calling onComplete
+    // which might update state in the parent
+    setTimeout(onComplete, 0)
     return null
   }
 

@@ -57,6 +57,43 @@ export const electron = (window as any).electron || {
         return true
       }
 
+      // --- Window Controls ---
+      if (channel.startsWith('window:')) {
+        if (channel === 'window:is-maximized') return false
+        return null
+      }
+
+      // --- Dashboard ---
+      if (channel === 'dashboard:get-data') {
+        const storedGames = localStorage.getItem(MOCK_STORAGE_KEYS.GAMES)
+        const games = storedGames ? JSON.parse(storedGames) : []
+        
+        const installedGames = games.filter((g: any) => g.is_installed).length
+        const totalPlaytime = games.reduce((acc: number, g: any) => acc + (g.playtime_seconds || 0), 0)
+        
+        return {
+          stats: {
+            totalGames: games.length,
+            installedGames,
+            totalPlaytime,
+            completedGames: 0
+          },
+          recentGames: games.slice(0, 5),
+          news: [
+            { 
+              id: '1', 
+              title: 'PlayHub Update', 
+              image_url: getPlaceholderImage('Update', 'news'), 
+              summary: 'Welcome to the latest version of PlayHub.',
+              published_at: Date.now() / 1000,
+              source: 'PlayHub'
+            }
+          ],
+          recommendation: games.length > 0 ? games[0] : null,
+          friendsActivity: []
+        }
+      }
+
       // --- Epic / GOG / Steam (Stubs) ---
       if (channel.startsWith('epic:') || channel.startsWith('gog:') || channel.startsWith('steam:')) {
          if (channel.includes('scan')) return { success: true, added: 0 }

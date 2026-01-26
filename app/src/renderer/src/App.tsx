@@ -3,6 +3,7 @@ import { LoginScreen } from './components/LoginScreen'
 import { Logo } from './components/Logo'
 import { SettingsModal } from './components/SettingsModal'
 import { GameCard } from './components/GameCard'
+import { OnboardingHints } from './components/OnboardingHints'
 import { GameDetailsModal } from './components/GameDetailsModal'
 import { AddGameModal } from './components/AddGameModal'
 import { SteamLibrary } from './components/SteamLibrary'
@@ -10,6 +11,9 @@ import { GogLibrary } from './components/GogLibrary'
 import { SocialPage } from './components/SocialPage'
 import { WelcomeIntro } from './components/WelcomeIntro'
 import { RegistrationSuccess } from './components/RegistrationSuccess'
+import { Dashboard } from './components/Dashboard'
+import { TitleBar } from './components/TitleBar'
+import { CouchOverlay } from './components/CouchOverlay'
 import { electron } from './utils/electron'
 import clsx from 'clsx'
 import i18n from './i18n'
@@ -82,7 +86,7 @@ function App(): JSX.Element {
   const { t } = useTranslation()
   const [greeting, setGreeting] = useState(getGreeting())
   const [user, setUser] = useState<any>(null)
-  const [activeTab, setActiveTab] = useState('home') // home, news, social
+  const [activeTab, setActiveTab] = useState('dashboard') // dashboard, home, news, social
   const [isSettingsOpen, setIsSettingsOpen] = useState(false)
   const [selectedGameId, setSelectedGameId] = useState<string | null>(null)
   const [libraryFilter, setLibraryFilter] = useState('all') // all, favorites, installed
@@ -132,6 +136,74 @@ function App(): JSX.Element {
   const [showWelcomeIntro, setShowWelcomeIntro] = useState(true)
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false)
   const [introData, setIntroData] = useState<any>(null)
+  const [viewMode, setViewMode] = useState<'grid' | 'couch'>(() => {
+    if (typeof window !== 'undefined') {
+      return (window.localStorage.getItem('playhub:viewMode') as 'grid' | 'couch') || 'grid'
+    }
+    return 'grid'
+  })
+  const [timeFilter, setTimeFilter] = useState<'all' | 'short' | 'medium' | 'long' | 'hltb'>(() => {
+    if (typeof window !== 'undefined') {
+        return (window.localStorage.getItem('playhub:timeFilter') as any) || 'all'
+    }
+    return 'all'
+  })
+
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+        window.localStorage.setItem('playhub:timeFilter', timeFilter)
+    }
+  }, [timeFilter])
+
+  const [showOnboardingHints, setShowOnboardingHints] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('playhub:showOnboardingHints')
+      return stored !== 'false'
+    }
+    return true
+  })
+
+  const handleDismissOnboardingHints = () => {
+    setShowOnboardingHints(false)
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem('playhub:showOnboardingHints', 'false')
+    }
+  }
+
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('playhub:sidebarOpen')
+      return stored !== 'false'
+    }
+    return true
+  })
+
+  const toggleSidebar = () => {
+    setIsSidebarOpen(prev => {
+      const newState = !prev
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('playhub:sidebarOpen', String(newState))
+      }
+      return newState
+    })
+  }
+
+  const toggleViewMode = () => {
+    setViewMode(prev => {
+      const newState = prev === 'grid' ? 'couch' : 'grid'
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('playhub:viewMode', newState)
+      }
+      // Auto-collapse sidebar in couch mode
+      if (newState === 'couch') {
+        setIsSidebarOpen(false)
+        if (typeof window !== 'undefined') {
+            window.localStorage.setItem('playhub:sidebarOpen', 'false')
+        }
+      }
+      return newState
+    })
+  }
 
   const handleLogin = (u: any, notification?: { title: string; body: string }, isNewUser: boolean = false) => {
     setUser(u)
@@ -140,7 +212,7 @@ function App(): JSX.Element {
       setTimeout(() => setNotification(null), 5000)
     }
     if (isNewUser) {
-        setActiveTab('home')
+        setActiveTab('dashboard')
         setShowRegistrationSuccess(true)
         if (typeof window !== 'undefined') {
              window.localStorage.setItem('playhub:onboardingSeen', 'true')
@@ -205,49 +277,59 @@ function App(): JSX.Element {
   const [isAppInitialized, setIsAppInitialized] = useState(false)
 
   useEffect(() => {
+    let isMounted = true
     const initApp = async () => {
       try {
         const token = window.localStorage.getItem('playhub_session')
-        const u = await electron.ipcRenderer.invoke('auth:check', { token })
+        
+        // Helper to prevent infinite blocking
+        const withTimeout = <T,>(promise: Promise<T>, ms: number, fallback: T): Promise<T> => {
+          return Promise.race([
+            promise,
+            new Promise<T>((resolve) => setTimeout(() => resolve(fallback), ms))
+          ])
+        }
+
+        const u = await withTimeout(electron.ipcRenderer.invoke('auth:check', { token }), 5000, null)
         if (u) {
-          setUser(u)
+          if (isMounted) setUser(u)
           if (typeof window !== 'undefined') {
             const onboardingSeen = window.localStorage.getItem('playhub:onboardingSeen')
             if (!onboardingSeen) {
-              setShowTutorialIntro(true)
+              if (isMounted) setShowTutorialIntro(true)
             }
           }
         }
 
-        // Perform initial scan
-        await electron.ipcRenderer.invoke('steam:scan')
+        // Perform initial scan in background
+        electron.ipcRenderer.invoke('steam:scan').catch(console.error)
 
-        // Sync news and data
-        try {
-          await electron.ipcRenderer.invoke('news:sync')
-        } catch (err) {
+        // Sync news and data in background
+        electron.ipcRenderer.invoke('news:sync').catch((err: any) => {
           console.warn('News sync failed', err)
-        }
+        })
 
-        // Pre-load data
-        const initialGames = await electron.ipcRenderer.invoke('library:get', 'all')
-        setGames(initialGames)
+        // Pre-load data with timeouts
+        const initialGames = await withTimeout(electron.ipcRenderer.invoke('library:get', 'all'), 5000, [])
+        if (isMounted) setGames(initialGames)
 
-        const initialNews = await electron.ipcRenderer.invoke('news:get')
-        setNews(initialNews)
+        const initialNews = await withTimeout(electron.ipcRenderer.invoke('news:get'), 3000, [])
+        if (isMounted) setNews(initialNews)
 
         // Fetch intro suggestions to prevent flash
         try {
-            const suggestions = await electron.ipcRenderer.invoke('game:get-intro-suggestions')
+            const suggestions = await withTimeout<any>(electron.ipcRenderer.invoke('game:get-intro-suggestions'), 3000, null)
             if (suggestions && (suggestions.lastPlayed || suggestions.random)) {
-                setIntroData(suggestions)
-                setShowWelcomeIntro(true)
+                if (isMounted) {
+                  setIntroData(suggestions)
+                  setShowWelcomeIntro(true)
+                }
             } else {
-                setShowWelcomeIntro(false)
+                if (isMounted) setShowWelcomeIntro(false)
             }
         } catch (e) {
             console.warn('Failed to fetch intro suggestions', e)
-            setShowWelcomeIntro(false)
+            if (isMounted) setShowWelcomeIntro(false)
         }
 
         // Sync tray behavior
@@ -258,16 +340,32 @@ function App(): JSX.Element {
 
         // Signal main process that we are ready
         window.electron.ipcRenderer.send('app:initialized')
-        setIsAppInitialized(true)
+        if (isMounted) setIsAppInitialized(true)
       } catch (e) {
         console.error('Initialization failed', e)
+        // Ensure we don't get stuck in intro mode if initialization fails
+        if (isMounted) setShowWelcomeIntro(false)
         // Even if it fails, we should probably show the app
         window.electron.ipcRenderer.send('app:initialized')
-        setIsAppInitialized(true)
+        if (isMounted) setIsAppInitialized(true)
       }
     }
     
     initApp()
+
+    // Safety timeout to ensure app always loads
+    const safetyTimeout = setTimeout(() => {
+        if (isMounted) {
+            setIsAppInitialized((prev) => {
+                if (!prev) {
+                    console.warn('Initialization timed out, forcing load')
+                    window.electron.ipcRenderer.send('app:initialized')
+                    return true
+                }
+                return prev
+            })
+        }
+    }, 5000)
 
     const storedTheme = window.localStorage.getItem('playhub:theme')
     if (storedTheme === 'dark' || storedTheme === 'light' || storedTheme === 'system') {
@@ -298,6 +396,8 @@ function App(): JSX.Element {
     electron.ipcRenderer.on('notification:new', handleNotification)
 
     return () => {
+      isMounted = false
+      clearTimeout(safetyTimeout)
       clearInterval(timer)
       electron.ipcRenderer.removeListener('notification:new', handleNotification)
     }
@@ -626,28 +726,65 @@ function App(): JSX.Element {
   const filteredHomeGames = useMemo(() => {
     const base = activePlatform ? platformGames : games
     let result = base
-    
-    if (!searchQuery.trim()) return result
-    const q = searchQuery.toLowerCase()
+    const raw = searchQuery.trim()
+    if (!raw) return result
+
+    const tokens = raw.split(/\s+/)
+    let statusFilter: string | null = null
+    let platformFilter: string | null = null
+    const textTokens: string[] = []
+
+    tokens.forEach((token) => {
+      const lower = token.toLowerCase()
+      if (lower.startsWith('status:')) {
+        statusFilter = lower.slice('status:'.length)
+      } else if (lower.startsWith('platform:')) {
+        platformFilter = lower.slice('platform:'.length)
+      } else {
+        textTokens.push(token)
+      }
+    })
+
+    if (statusFilter) {
+      result = result.filter((g: any) => g.status_tag && String(g.status_tag).toLowerCase().includes(statusFilter as string))
+    }
+
+    if (platformFilter) {
+      result = result.filter((g: any) => g.platform && String(g.platform).toLowerCase().includes(platformFilter as string))
+    }
+
+    if (timeFilter !== 'all') {
+        result = result.filter((g: any) => {
+            const time = g.hltb_main || 0
+            if (timeFilter === 'hltb') return time > 0
+            if (timeFilter === 'short') return time > 0 && time <= 5
+            if (timeFilter === 'medium') return time > 5 && time <= 20
+            if (timeFilter === 'long') return time > 20
+            return true
+        })
+    }
+
+    if (!textTokens.length) return result
+
+    const textQuery = textTokens.join(' ').toLowerCase()
     return result.filter((g: any) => {
-      if (g.title && g.title.toLowerCase().includes(q)) return true
-      if (g.status_tag && g.status_tag.toLowerCase().includes(q)) return true
-      if (g.platform && String(g.platform).toLowerCase().includes(q)) return true
+      if (g.title && g.title.toLowerCase().includes(textQuery)) return true
+      if (g.status_tag && g.status_tag.toLowerCase().includes(textQuery)) return true
+      if (g.platform && String(g.platform).toLowerCase().includes(textQuery)) return true
       return false
     })
   }, [games, platformGames, activePlatform, searchQuery])
 
-  if (!isAppInitialized) {
-    return (
-      <div className="h-screen w-screen flex flex-col items-center justify-center bg-slate-950 text-white">
-        <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4"></div>
-        <div className="text-lg text-slate-400">Initializing PlayHub...</div>
-      </div>
-    )
-  }
-
   return (
-    <div className="h-screen w-screen flex bg-transparent text-slate-50 font-sans overflow-hidden relative">
+    <div className="h-screen w-screen flex flex-col bg-transparent text-slate-50 font-sans overflow-hidden relative">
+      {/* Loading Overlay */}
+      {!isAppInitialized && (
+        <div className="absolute inset-0 z-[10000] flex flex-col items-center justify-center bg-slate-950 text-white">
+            <div className="w-16 h-16 border-4 border-primary-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+            <div className="text-lg text-slate-400">Initializing PlayHub...</div>
+        </div>
+      )}
+
       {/* Animated Background Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary-600/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob"></div>
@@ -656,6 +793,33 @@ function App(): JSX.Element {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/60 via-slate-950/40 to-slate-950/60" />
       </div>
 
+      <div className={clsx(
+        "w-full transition-opacity duration-1000 ease-in-out relative z-[9999]",
+        showWelcomeIntro ? "opacity-0 pointer-events-none" : "opacity-100"
+      )}>
+        <TitleBar 
+          user={user} 
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onAddGame={() => setIsAddGameOpen(true)}
+          showTutorial={activeTutorial === 'accounts'}
+          onTutorialNext={() => setActiveTutorial('library')}
+          onTutorialSkip={() => setActiveTutorial(null)}
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          searchQuery={searchQuery}
+          onSearchChange={setSearchQuery}
+          activeTutorial={activeTutorial}
+          onTutorialDiscord={() => setActiveTutorial('discord')}
+          isSidebarOpen={isSidebarOpen}
+          onToggleSidebar={toggleSidebar}
+          viewMode={viewMode}
+          onToggleViewMode={toggleViewMode}
+          timeFilter={timeFilter}
+          onTimeFilterChange={setTimeFilter}
+        />
+      </div>
+
+      <div className="flex-1 flex overflow-hidden relative z-10 w-full h-full">
       {!user ? (
         <LoginScreen onLogin={handleLogin} />
       ) : (
@@ -740,7 +904,10 @@ function App(): JSX.Element {
           setIsAddGameOpen(false)
         }} 
       />
-      <div className="relative z-10 w-64 glass-panel border-r-0 m-4 rounded-2xl p-4 flex flex-col flex-shrink-0 select-none overflow-hidden">
+      <div className={clsx(
+        "relative z-10 glass-panel border-r-0 rounded-2xl flex flex-col flex-shrink-0 select-none overflow-hidden transition-all duration-300 ease-in-out",
+        isSidebarOpen ? "w-64 m-4 p-4" : "w-0 m-0 p-0 border-none opacity-0"
+      )}>
         <div className="px-2 cursor-pointer mb-6" onClick={() => setActiveTab('home')}>
             <Logo className="h-10 w-auto" />
         </div>
@@ -924,164 +1091,47 @@ function App(): JSX.Element {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 mr-4 my-4 gap-4">
-        {/* Top Bar */}
-        <div className="h-16 glass-panel rounded-2xl grid grid-cols-[1fr_auto_1fr] items-center px-6 shrink-0 z-20 gap-4">
-            {/* Left: Navigation */}
-            <div className="flex items-center gap-8">
-                <button 
-                    onClick={() => setActiveTab('news')}
-                    className={clsx("font-medium transition-colors text-sm hover:text-white", activeTab === 'news' ? "text-white" : "text-slate-400")}
-                >
-                    {t('app.topbar.news')}
-                </button>
-                
-                <div className="relative">
-                  <button 
-                      onClick={() => {
-                        setActiveTab('social')
-                      }}
-                      className={clsx("font-medium transition-colors text-sm hover:text-white", activeTab === 'social' ? "text-white" : "text-slate-400")}
-                  >
-                      {t('app.topbar.social')}
-                  </button>
-                  {activeTutorial === 'social' && (
-                    <div className="absolute left-0 top-8 z-30">
-                      <div className="relative bg-slate-900 border border-primary-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 min-w-[200px]">
-                        <div className="absolute -top-2 left-4 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-slate-900" />
-                        <div className="flex items-center justify-between mb-1">
-                          <div className="font-semibold text-primary-200">
-                            {t('app.onboarding.socialTitle')}
-                          </div>
-                          <div className="text-[10px] text-slate-400 border border-slate-600 rounded-full px-2 py-0.5">
-                            3 / 4
-                          </div>
-                        </div>
-                        <div className="text-[11px] text-slate-300 max-w-xs">
-                          {t('app.onboarding.socialTutorialHint')}
-                        </div>
-                        <div className="flex items-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => setActiveTutorial('discord')}
-                            className="mt-2 inline-flex items-center px-2 py-1 rounded bg-primary-600/80 text-[10px] font-medium text-white hover:bg-primary-500"
-                          >
-                            {t('app.onboarding.nextStep')}
-                          </button>
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setActiveTutorial(null);
-                            }}
-                            className="mt-2 inline-flex items-center px-2 py-1 rounded border border-slate-700 text-[10px] font-medium text-slate-400 hover:text-white hover:bg-slate-800"
-                          >
-                            {t('app.onboarding.skip')}
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-            </div>
-
-            {/* Center: Search */}
-            <div className="flex justify-center w-full max-w-md mx-auto">
-                <div className="relative group w-full">
-                    <div className="absolute inset-y-0 left-3 flex items-center pointer-events-none">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-slate-500 group-focus-within:text-primary-500 transition-colors"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
-                    </div>
-                    <input 
-                        type="text" 
-                        placeholder={t('app.topbar.searchGames')}
-                        value={searchQuery}
-                        onChange={(e) => setSearchQuery(e.target.value)}
-                        className="w-full bg-slate-950/50 border border-slate-800 rounded-full py-2 pl-10 pr-4 text-sm focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 focus:bg-slate-900 transition-all placeholder:text-slate-600 shadow-inner"
-                    />
-                </div>
-            </div>
-
-            {/* Right: Actions */}
-            <div className="flex items-center gap-4 justify-end">
-              <button
-                onClick={() => setIsAddGameOpen(true)}
-                className="w-9 h-9 rounded-full bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white hover:border-primary-500 transition-colors group"
-                title={t('app.sidebar.addNonSteamGameTitle')}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="18"
-                  height="18"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  className="group-hover:scale-110 transition-transform"
-                >
-                  <circle cx="12" cy="12" r="10" />
-                  <line x1="12" y1="8" x2="12" y2="16" />
-                  <line x1="8" y1="12" x2="16" y2="12" />
-                </svg>
-              </button>
-              <div className="relative">
-                <div
-                  onClick={() => {
-                    setIsSettingsOpen(true)
-                  }}
-                  className="w-9 h-9 rounded-full bg-slate-800 border border-slate-700 flex items-center justify-center text-slate-400 font-bold overflow-hidden cursor-pointer hover:border-primary-500 hover:text-white transition-all"
-                >
-                  {user.avatar_url ? (
-                    <img src={user.avatar_url} className="w-full h-full object-cover" />
-                  ) : (
-                    user.username[0].toUpperCase()
-                  )}
-                </div>
-                {activeTutorial === 'accounts' && (
-                  <div className="absolute top-11 right-0 z-30">
-                    <div className="relative bg-slate-900 border border-primary-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 max-w-xs text-left">
-                      <div className="absolute -top-2 right-8 w-0 h-0 border-l-4 border-r-4 border-b-4 border-l-transparent border-r-transparent border-b-slate-900" />
-                      <div className="flex items-center justify-between mb-1">
-                        <div className="font-semibold text-primary-200">
-                          {t('app.onboarding.accountsTitle')}
-                        </div>
-                        <div className="text-[10px] text-slate-400 border border-slate-600 rounded-full px-2 py-0.5">
-                          1 / 4
-                        </div>
-                      </div>
-                      <div className="text-[11px] text-slate-300">
-                        {t('app.onboarding.accountsTutorialHint')}
-                      </div>
-                      <div className="flex items-center gap-2 mt-2">
-                        <button
-                          type="button"
-                          onClick={() => setActiveTutorial('library')}
-                          className="inline-flex items-center px-2 py-1 rounded bg-primary-600/80 text-[10px] font-medium text-white hover:bg-primary-500"
-                        >
-                          {t('app.onboarding.nextStep')}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setActiveTutorial(null)
-                          }}
-                          className="inline-flex items-center px-2 py-1 rounded border border-slate-700 text-[10px] font-medium text-slate-400 hover:text-white hover:bg-slate-800"
-                        >
-                          {t('app.onboarding.skip')}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-        </div>
-
+        
         {/* Scrollable Content */}
-        <div className={clsx("flex-1 relative z-10 rounded-2xl", activeTab === 'social' ? "p-0 overflow-hidden glass-panel" : "px-4 pb-4 overflow-y-auto custom-scrollbar")}>
+        <div className={clsx("flex-1 relative z-10 rounded-2xl", (activeTab === 'social' || activeTab === 'dashboard') ? "flex flex-col p-0 overflow-hidden glass-panel" : "px-4 pb-4 overflow-y-auto custom-scrollbar")}>
+            {activeTab === 'dashboard' && (
+              <Dashboard 
+                user={user}
+                onNavigate={(tab, filter) => {
+                  setActiveTab(tab)
+                  if (filter) setLibraryFilter(filter)
+                }}
+                onPlayGame={async (gameId) => {
+                  await electron.ipcRenderer.invoke('game:launch', gameId)
+                }}
+                onSelectGame={setSelectedGameId}
+                viewMode={viewMode}
+                onToggleViewMode={toggleViewMode}
+                timeFilter={timeFilter}
+                onTimeFilterChange={setTimeFilter}
+                showOnboardingHints={showOnboardingHints}
+                onDismissOnboardingHints={handleDismissOnboardingHints}
+                onboardingStats={homeStats}
+                hasTags={allTags.length > 0}
+              />
+            )}
+
             {activeTab === 'home' && (
                 <>
+                    {/* Onboarding Hints also shown on Home if desired, but maybe user wants it only on Dashboard. 
+                        Let's keep it here too for now as it was original behavior, or remove it if redundant.
+                        User asked for "Dashboard Onboarding Hints". 
+                        I will COMMENT OUT the one in Home tab to avoid duplication if they switch tabs. 
+                        Or keep it. If I dismiss it, it dismisses everywhere (state is shared).
+                        Let's keep it for maximum visibility unless user complains.
+                    */}
+                    {showOnboardingHints && (
+                      <OnboardingHints 
+                        stats={homeStats} 
+                        hasTags={allTags.length > 0} 
+                        onDismiss={handleDismissOnboardingHints} 
+                      />
+                    )}
                     <header className="mb-8 mt-2">
                         <h2 className="text-4xl mb-2 flex items-center gap-2">
                             <span className="font-light text-slate-200 tracking-tight">{greeting},</span>
@@ -1273,7 +1323,12 @@ function App(): JSX.Element {
                               </div>
                             </div>
                           )}
-                            <div className="flex-1 grid grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7 gap-4 md:gap-6">
+                            <div className={clsx(
+                                "flex-1 grid gap-4 md:gap-6",
+                                viewMode === 'couch' 
+                                    ? "grid-cols-2 md:grid-cols-3 lg:grid-cols-4" 
+                                    : "grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 2xl:grid-cols-7"
+                            )}>
                             {filteredHomeGames.map((game) => (
                                 <GameCard 
                                     key={game.id} 
@@ -1281,6 +1336,7 @@ function App(): JSX.Element {
                                     onToggleFavorite={toggleFavorite} 
                                     onClick={setSelectedGameId}
                                     onChangeStatus={handleChangeStatus}
+                                    showDetails={viewMode !== 'couch'}
                                 />
                             ))}
                           </div>
@@ -1647,6 +1703,15 @@ function App(): JSX.Element {
       )}
       </>
       )}
+      </div>
+      <CouchOverlay 
+        visible={viewMode === 'couch'} 
+        games={filteredHomeGames} 
+        onPlay={async (id) => {
+            await electron.ipcRenderer.invoke('game:launch', id)
+        }} 
+        onClose={toggleViewMode} 
+      />
     </div>
   )
 }

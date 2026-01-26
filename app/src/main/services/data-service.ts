@@ -196,7 +196,93 @@ export class DataService {
       .all()
   }
 
-  private registerHandlers() {
+  private getDashboardData() {
+    try {
+      const db = dbManager.getDb()
+      
+      // Stats
+      const stats = db.prepare(`
+        SELECT 
+          COUNT(*) as totalGames,
+          SUM(CASE WHEN is_installed = 1 THEN 1 ELSE 0 END) as installedGames,
+          SUM(playtime_seconds) as totalPlaytime,
+          (
+            SELECT COUNT(*) 
+            FROM games g2
+            JOIN game_tags gt ON gt.game_id = g2.id
+            JOIN tags t ON t.id = gt.tag_id
+            WHERE t.name = 'Completed'
+          ) as completedGames
+        FROM games
+      `).get() as any
+
+      // Recent Games
+      const recentGames = db.prepare(`
+        SELECT * FROM games 
+        WHERE last_played IS NOT NULL 
+        ORDER BY last_played DESC 
+        LIMIT 5
+      `).all()
+
+      // News
+      const news = db.prepare(`
+        SELECT * FROM news 
+        ORDER BY published_at DESC 
+        LIMIT 5
+      `).all()
+
+      // Recommendation (Random installed game)
+      const recommendation = db.prepare(`
+        SELECT * FROM games 
+        WHERE is_installed = 1 
+        ORDER BY RANDOM() 
+        LIMIT 1
+      `).get()
+
+      // Friends
+      const friends = db.prepare(`
+        SELECT id, platform, external_id, username, avatar_url, status, game_activity 
+        FROM friends 
+        ORDER BY 
+          CASE status 
+            WHEN 'in-game' THEN 1 
+            WHEN 'online' THEN 2 
+            ELSE 3 
+          END ASC,
+          username COLLATE NOCASE ASC
+        LIMIT 5
+      `).all()
+
+      return {
+        stats: {
+          totalGames: stats?.totalGames || 0,
+          totalPlaytime: Math.round(stats?.totalPlaytime || 0),
+          installedGames: stats?.installedGames || 0,
+          completedGames: stats?.completedGames || 0
+        },
+        recentGames: recentGames || [],
+        news: news || [],
+        recommendation: recommendation || null,
+        friendsActivity: friends || []
+      }
+    } catch (error) {
+      console.error('[DataService] Failed to get dashboard data:', error)
+      // Return safe empty structure
+      return {
+        stats: { totalGames: 0, installedGames: 0, totalPlaytime: 0, completedGames: 0 },
+        recentGames: [],
+        news: [],
+        recommendation: null,
+        friendsActivity: []
+      }
+    }
+  }
+
+    private registerHandlers() {
+    ipcMain.handle('dashboard:get-data', async () => {
+      return this.getDashboardData()
+    })
+
     ipcMain.handle('news:sync', async () => {
       console.log('[News] Manual sync requested')
       await this.syncNews()
@@ -244,7 +330,7 @@ export class DataService {
         .get(id)
     })
 
-    ipcMain.handle('library:get', async (_, filter: string) => {
+    ipcMain.handle('library:get', async (_, filter?: string) => {
       const db = dbManager.getDb()
       let whereClause = ''
 

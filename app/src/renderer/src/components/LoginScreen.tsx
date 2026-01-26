@@ -105,7 +105,7 @@ export function LoginScreen({ onLogin }: { onLogin: (user: any, notification?: {
   }
 
   return (
-    <div className="fixed inset-0 flex items-center justify-center z-50">
+    <div className="absolute inset-0 flex items-center justify-center z-50">
       <div className="bg-slate-900/90 backdrop-blur-sm p-8 rounded-xl border border-slate-800 w-96 shadow-2xl">
         <div className="flex justify-center mb-6">
             <Logo className="h-16 w-auto" />

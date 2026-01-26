@@ -3,6 +3,7 @@ import clsx from 'clsx'
 import { X, Play, Clock, Star, Download, Tag as TagIcon, Plus, StickyNote, Image as ImageIcon, Video } from 'lucide-react'
 import { electron } from '../utils/electron'
 import { useTranslation } from 'react-i18next'
+import { MediaViewer } from './MediaViewer'
 
 interface GameDetailsModalProps {
   gameId: string | null
@@ -33,6 +34,10 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
   const [isManagingTags, setIsManagingTags] = useState(false)
   const [newTagInput, setNewTagInput] = useState('')
 
+  // Media Viewer state
+  const [mediaViewerOpen, setMediaViewerOpen] = useState(false)
+  const [mediaViewerIndex, setMediaViewerIndex] = useState(0)
+
   const { t } = useTranslation()
 
   useEffect(() => {
@@ -53,6 +58,7 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
       loadNotes(gameId)
     } else {
       setGame(null)
+      setMediaViewerOpen(false)
       setSessionHistory([])
       setCurrentSession(null)
       setCurrentSessionSeconds(0)
@@ -401,7 +407,7 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
                                   <h3 className="text-xl font-bold mb-4">{t('gameDetails.overview.media')}</h3>
                                   <div className="flex gap-4 overflow-x-auto pb-4 custom-scrollbar snap-x">
                                     {game.metadata.screenshots.map((url: string, index: number) => (
-                                      <div key={index} className="flex-none w-64 aspect-video rounded-lg overflow-hidden border border-slate-700 snap-center shadow-lg group relative cursor-pointer" onClick={() => window.open(url.replace('.600x338', '.1920x1080'), '_blank')}>
+                                      <div key={index} className="flex-none w-64 aspect-video rounded-lg overflow-hidden border border-slate-700 snap-center shadow-lg group relative cursor-pointer" onClick={() => { setMediaViewerIndex(index); setMediaViewerOpen(true); }}>
                                           <img src={url} loading="lazy" alt={`Screenshot ${index + 1}`} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" />
                                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center opacity-0 group-hover:opacity-100">
                                             <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-white drop-shadow-md"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
@@ -649,7 +655,7 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
                                     
                                     {/* Screenshots (fill remaining slots up to 4 total) */}
                                     {game.metadata.screenshots?.slice(0, 4 - (game.metadata.movies?.slice(0,2).length || 0)).map((shot: string, i: number) => (
-                                      <div key={`img-${i}`} className="relative group aspect-video rounded-lg overflow-hidden border border-slate-800 bg-slate-900 cursor-pointer" onClick={() => window.open(shot, '_blank')}>
+                                      <div key={`img-${i}`} className="relative group aspect-video rounded-lg overflow-hidden border border-slate-800 bg-slate-900 cursor-pointer" onClick={() => { setMediaViewerIndex(i); setMediaViewerOpen(true); }}>
                                           <img 
                                             src={shot} 
                                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
@@ -769,6 +775,12 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
             </>
         )}
       </div>
+      <MediaViewer 
+        isOpen={mediaViewerOpen} 
+        onClose={() => setMediaViewerOpen(false)} 
+        items={game?.metadata?.screenshots || []} 
+        initialIndex={mediaViewerIndex}
+      />
     </div>
   )
 }

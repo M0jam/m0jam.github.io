@@ -179,6 +179,8 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
   const [systemStats, setSystemStats] = useState<any>(null)
   const [onboardingResetMessage, setOnboardingResetMessage] = useState('')
   const [showIntegrationOnboarding, setShowIntegrationOnboarding] = useState(false)
+  const [backupJson, setBackupJson] = useState('')
+  const [backupStatus, setBackupStatus] = useState('')
 
   useEffect(() => {
     const handleSteamProgress = (_: any, data: { message: string; percent: number }) => {
@@ -695,6 +697,89 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
       setGogSyncStatus('Could not disconnect from GOG')
     } finally {
       setIsGogDisconnecting(false)
+    }
+  }
+
+  const handleExportSettings = async () => {
+    if (typeof window === 'undefined') return
+    try {
+      const localKeys = [
+        'playhub:theme',
+        'playhub:background',
+        'playhub:locale',
+        'playhub:sidebarOpen',
+        'playhub:onboardingSeen',
+        'playhub:minimizeToTray',
+        'playhub:feedbackSendToDiscord',
+        'playhub:discordPresenceEnabled',
+        'playhub:lastChangelogVersionSeen',
+        'playhub:lastUpdatePromptVersion',
+        'playhub:postAccountOnboardingSeen',
+        'playhub:dashboardWidgets',
+        'playhub:dashboardData'
+      ]
+      const localStorageSnapshot: Record<string, string> = {}
+      for (const key of localKeys) {
+        const value = window.localStorage.getItem(key)
+        if (value !== null) {
+          localStorageSnapshot[key] = value
+        }
+      }
+      const tags = await electron.ipcRenderer.invoke('tags:get-all')
+      const payload = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        localStorage: localStorageSnapshot,
+        tags
+      }
+      const json = JSON.stringify(payload, null, 2)
+      setBackupJson(json)
+      let copied = false
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        try {
+          await navigator.clipboard.writeText(json)
+          copied = true
+        } catch (e) {
+          console.error('Clipboard write failed', e)
+        }
+      }
+      if (copied) {
+        setBackupStatus(t('settings.backup.exportCopied'))
+      } else {
+        setBackupStatus(t('settings.backup.exportReady'))
+      }
+    } catch (error) {
+      console.error('Failed to export settings backup', error)
+      setBackupStatus(t('settings.backup.exportFailed'))
+    }
+  }
+
+  const handleImportSettings = async () => {
+    if (typeof window === 'undefined') return
+    if (!backupJson.trim()) return
+    try {
+      const parsed = JSON.parse(backupJson)
+      if (parsed && parsed.localStorage && typeof parsed.localStorage === 'object') {
+        Object.entries(parsed.localStorage as Record<string, string>).forEach(([key, value]) => {
+          window.localStorage.setItem(key, String(value))
+        })
+      }
+      if (parsed && Array.isArray(parsed.tags)) {
+        const existing = await electron.ipcRenderer.invoke('tags:get-all')
+        const existingNames = new Set(
+          Array.isArray(existing) ? existing.map((t: any) => String(t.name || '').toLowerCase()) : []
+        )
+        for (const tag of parsed.tags as any[]) {
+          const name = tag && typeof tag.name === 'string' ? tag.name.trim() : ''
+          if (!name) continue
+          if (existingNames.has(name.toLowerCase())) continue
+          await electron.ipcRenderer.invoke('tags:create', name)
+        }
+      }
+      setBackupStatus(t('settings.backup.importSuccess'))
+    } catch (error) {
+      console.error('Failed to import settings backup', error)
+      setBackupStatus(t('settings.backup.importFailed'))
     }
   }
 
@@ -2013,6 +2098,50 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                   >
                     {t('settings.onboardingResetButton')}
                   </button>
+                </div>
+              </div>
+              <div className="p-6 bg-slate-800/50 rounded-xl border border-slate-700">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <div className="font-bold">{t('settings.backup.title')}</div>
+                    <div className="text-sm text-slate-400">{t('settings.backup.description')}</div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleExportSettings}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 rounded-lg text-xs font-medium text-slate-100 border border-slate-600 hover:border-primary-500 transition-colors"
+                  >
+                    {t('settings.backup.exportButton')}
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  <textarea
+                    value={backupJson}
+                    onChange={e => setBackupJson(e.target.value)}
+                    rows={5}
+                    spellCheck={false}
+                    placeholder={t('settings.backup.importPlaceholder')}
+                    className="w-full bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-primary-500 resize-none"
+                  />
+                  <div className="flex items-center justify-between">
+                    <div
+                      className={clsx(
+                        'text-xs',
+                        backupStatus && backupStatus.toLowerCase().includes('failed')
+                          ? 'text-red-400'
+                          : 'text-emerald-400'
+                      )}
+                    >
+                      {backupStatus}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleImportSettings}
+                      className="px-4 py-1.5 bg-primary-600 hover:bg-primary-500 rounded-lg text-xs font-medium text-white transition-colors"
+                    >
+                      {t('settings.backup.importButton')}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>

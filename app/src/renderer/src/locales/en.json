@@ -19,6 +19,33 @@
     "onboardingResetTitle": "Show onboarding again",
       "onboardingResetDescription": "Clear the first-launch helper so it appears again the next time you open PlayHub.",
       "onboardingResetButton": "Show onboarding again",
+    "backup": {
+      "copyToClipboard": "Copy backup to clipboard",
+      "restoreFromJson": "Restore from JSON",
+      "exportReady": "Backup ready (copy above)",
+      "exportCopied": "Backup copied to clipboard!",
+      "importSuccess": "Restore successful! Please restart PlayHub.",
+      "importFailed": "Restore failed: Invalid JSON or data.",
+      "placeholder": "Paste backup JSON here..."
+    },
+    "viewMode": {
+        "grid": "Standard View",
+        "couch": "Couch Mode"
+    },
+    "timeFilter": {
+        "label": "Time Budget",
+        "all": "Any Duration",
+        "short": "Short (< 5h)",
+        "medium": "Medium (5-20h)",
+        "long": "Long (> 20h)"
+    },
+    "onboardingHints": {
+        "title": "Getting Started",
+        "connect": "Connect your gaming accounts in Settings to sync your library.",
+        "play": "Start your first game to track playtime!",
+        "tags": "Right-click a game to organize it with tags.",
+        "dismiss": "Got it"
+    },
     "sidebar": {
       "title": "Settings",
       "account": "Account",
@@ -198,6 +225,45 @@
       "epicConnectedLastSync": "Connected as {{id}} • Last sync {{time}}",
       "feedbackSavedLocal": "Feedback saved locally, but the feedback server could not be reached. It will not appear on the dashboard.",
       "feedbackThanks": "Thank you for your feedback!",
+      "dashboard": {
+        "greeting": {
+          "morning": "Good morning",
+          "afternoon": "Good afternoon",
+          "evening": "Good evening"
+        },
+        "subtitle": "Ready for your next adventure?",
+        "customize": "Customize Dashboard",
+        "widgets": "Widgets",
+        "widget": {
+          "showStats": "Stats",
+          "showRecent": "Recently Played",
+          "showNews": "News",
+          "showRecommendation": "Recommendation",
+          "showFriends": "Friends",
+          "showQuickAccess": "Quick Access",
+          "showSystemStatus": "System Status"
+        },
+        "stats": {
+          "games": "Games",
+          "playtime": "Hours",
+          "hours": "Hours",
+          "installed": "Ready",
+          "completed": "Completed"
+        },
+        "recentGames": "Jump Back In",
+        "viewAll": "View Library",
+        "play": "Play",
+        "noRecent": "No recent games played",
+        "news": "Latest Updates",
+        "viewNews": "All News",
+        "noNews": "No news available right now.",
+        "recommended": "Suggested for you",
+        "playNow": "Play Now",
+        "friends": "Friends Activity",
+        "noFriendsOnline": "No friends online",
+        "quickAccess": "Quick Access",
+        "systemStatus": "System Status"
+      },
       "feedbackFailed": "Failed to submit feedback. Please try again.",
       "updateToastLatest": "You're using the latest version.",
       "updateToastFailed": "Update check failed. Please check your connection and try again.",
@@ -227,7 +293,7 @@
     "topbar": {
       "news": "News",
       "social": "Social",
-      "searchGames": "Search games...",
+      "searchGames": "Search games... (e.g. status:Backlog platform:steam)",
       "online": "Online",
       "joinDiscordTitle": "Join the PlayHub Discord"
     },
@@ -555,5 +621,16 @@
   "errors": {
     "steamLibraryLoad": "Could not load Steam library",
     "platformGamesLoad": "Could not load games for this platform"
+  },
+  "viewMode": {
+    "grid": "Grid View",
+    "couch": "Couch Mode"
+  },
+  "timeFilter": {
+    "label": "Time Budget",
+    "all": "Any Time",
+    "short": "Short (< 5h)",
+    "medium": "Medium (5-20h)",
+    "long": "Long (> 20h)"
   }
 }
