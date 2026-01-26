@@ -269,8 +269,8 @@ function App() {
       {/* Footer */}
       <footer className="py-12 border-t border-white/5 bg-slate-900/50">
         <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3 opacity-50">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 grayscale" />
+          <div className="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity duration-300">
+            <img src="/logo.png" alt="Logo" className="w-8 h-8 grayscale hover:grayscale-0 transition-all" />
             <span className="font-semibold">PlayHub</span>
           </div>
           <div className="text-slate-500 text-sm">

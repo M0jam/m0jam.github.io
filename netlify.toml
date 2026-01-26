@@ -2,6 +2,7 @@
   base = "website"
   publish = "dist"
   command = "npm install && npm run build"
+  functions = "netlify/functions"
 
 [[redirects]]
   from = "/*"
