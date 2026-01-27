@@ -12,13 +12,13 @@ import { SocialPage } from './components/SocialPage'
 import { WelcomeIntro } from './components/WelcomeIntro'
 import { RegistrationSuccess } from './components/RegistrationSuccess'
 import { Dashboard } from './components/Dashboard'
-import { TitleBar } from './components/TitleBar'
+import { WindowControls } from './components/WindowControls'
 import { CouchOverlay } from './components/CouchOverlay'
 import { electron } from './utils/electron'
 import clsx from 'clsx'
 import i18n from './i18n'
 import { useTranslation } from 'react-i18next'
-import { Hash, Tag } from 'lucide-react'
+import { Hash, Tag, Search, Newspaper, Users, Plus, Tv, Clock } from 'lucide-react'
 
 const DISCORD_INVITE_URL: string | undefined =
   typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_DISCORD_INVITE_URL
@@ -793,30 +793,11 @@ function App(): JSX.Element {
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/60 via-slate-950/40 to-slate-950/60" />
       </div>
 
-      <div className={clsx(
-        "w-full transition-opacity duration-1000 ease-in-out relative z-[9999]",
-        showWelcomeIntro ? "opacity-0 pointer-events-none" : "opacity-100"
-      )}>
-        <TitleBar 
-          user={user} 
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onAddGame={() => setIsAddGameOpen(true)}
-          showTutorial={activeTutorial === 'accounts'}
-          onTutorialNext={() => setActiveTutorial('library')}
-          onTutorialSkip={() => setActiveTutorial(null)}
-          activeTab={activeTab}
-          onTabChange={setActiveTab}
-          searchQuery={searchQuery}
-          onSearchChange={setSearchQuery}
-          activeTutorial={activeTutorial}
-          onTutorialDiscord={() => setActiveTutorial('discord')}
-          isSidebarOpen={isSidebarOpen}
-          onToggleSidebar={toggleSidebar}
-          viewMode={viewMode}
-          onToggleViewMode={toggleViewMode}
-          timeFilter={timeFilter}
-          onTimeFilterChange={setTimeFilter}
-        />
+      <div className="fixed top-0 left-0 w-full h-8 z-[9999] flex items-start justify-between pointer-events-none">
+          <div className="flex-1 h-full pointer-events-auto" style={{ WebkitAppRegion: 'drag' } as any} />
+          <div className="pointer-events-auto mr-2 mt-2">
+            <WindowControls />
+          </div>
       </div>
 
       <div className="flex-1 flex overflow-hidden relative z-10 w-full h-full">
@@ -904,15 +885,42 @@ function App(): JSX.Element {
           setIsAddGameOpen(false)
         }} 
       />
-      <div className={clsx(
-        "relative z-10 glass-panel border-r-0 rounded-2xl flex flex-col flex-shrink-0 select-none overflow-hidden transition-all duration-300 ease-in-out",
-        isSidebarOpen ? "w-64 m-4 p-4" : "w-0 m-0 p-0 border-none opacity-0"
-      )}>
+      <div className="relative z-10 glass-panel border-r-0 rounded-2xl flex flex-col flex-shrink-0 select-none overflow-hidden w-64 m-4 p-4 transition-all duration-300 ease-in-out">
         <div className="px-2 cursor-pointer mb-6" onClick={() => setActiveTab('home')}>
             <Logo className="h-10 w-auto" />
         </div>
+
+        <div className="px-2 mb-6">
+             <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
+                <input 
+                    type="text" 
+                    placeholder={t('app.topbar.searchGames')}
+                    value={searchQuery || ''}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full bg-slate-800/50 border border-slate-700/50 focus:border-primary-500/50 rounded-lg py-2 pl-9 pr-4 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500/50 transition-all placeholder:text-slate-500"
+                />
+            </div>
+        </div>
         
         <div className="flex-1 overflow-y-auto min-h-0 space-y-6 scrollbar-hide">
+             <div className="space-y-1">
+                <button 
+                    onClick={() => setActiveTab('news')}
+                    className={clsx("w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg font-medium transition-colors text-sm", activeTab === 'news' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
+                >
+                    <Newspaper size={16} />
+                    <span>{t('app.topbar.news')}</span>
+                </button>
+                 <button 
+                    onClick={() => setActiveTab('social')}
+                    className={clsx("w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg font-medium transition-colors text-sm", activeTab === 'social' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
+                >
+                    <Users size={16} />
+                    <span>{t('app.topbar.social')}</span>
+                </button>
+            </div>
+
             <div className="space-y-1 relative">
             {activeTutorial === 'library' && (
               <div className="absolute top-10 left-2 z-30">
@@ -1026,6 +1034,33 @@ function App(): JSX.Element {
 
         </div>
 
+        {user && (
+            <div className="pt-4 mt-4 border-t border-slate-800/50 flex-shrink-0">
+                <button
+                    onClick={() => setIsSettingsOpen(true)}
+                    className="flex items-center gap-3 w-full hover:bg-white/5 p-2 rounded-lg transition-colors group text-left"
+                >
+                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 overflow-hidden group-hover:border-primary-500 transition-colors shrink-0">
+                        {user.avatar_url ? (
+                            <img src={user.avatar_url} className="w-full h-full object-cover" />
+                        ) : (
+                            <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold">
+                                {user.username?.[0]?.toUpperCase()}
+                            </div>
+                        )}
+                    </div>
+                    <div className="min-w-0">
+                        <div className="text-xs font-medium text-slate-200 group-hover:text-white truncate">
+                            {user.username}
+                        </div>
+                        <div className="text-[10px] text-slate-500 group-hover:text-slate-400 truncate">
+                            {t('app.settings.profile')}
+                        </div>
+                    </div>
+                </button>
+            </div>
+        )}
+
         {DISCORD_INVITE_URL && (
           <div className="pt-4 mt-4 border-t border-slate-800/50 flex-shrink-0">
              <button
@@ -1132,16 +1167,63 @@ function App(): JSX.Element {
                         onDismiss={handleDismissOnboardingHints} 
                       />
                     )}
-                    <header className="mb-8 mt-2">
-                        <h2 className="text-4xl mb-2 flex items-center gap-2">
-                            <span className="font-light text-slate-200 tracking-tight">{greeting},</span>
-                            <span className="font-bold text-white drop-shadow-md">{user.username}</span>
-                        </h2>
-                        <p className="text-slate-400 text-lg font-light tracking-wide">
-                            {libraryFilter === 'all' && t('app.home.heroAll')}
-                            {libraryFilter === 'favorites' && t('app.home.heroFavorites')}
-                            {libraryFilter === 'installed' && t('app.home.heroInstalled')}
-                        </p>
+                    <header className="mb-8 mt-2 flex items-end justify-between">
+                        <div>
+                            <h2 className="text-4xl mb-2 flex items-center gap-2">
+                                <span className="font-light text-slate-200 tracking-tight">{greeting},</span>
+                                <span className="font-bold text-white drop-shadow-md">{user.username}</span>
+                            </h2>
+                            <p className="text-slate-400 text-lg font-light tracking-wide">
+                                {libraryFilter === 'all' && t('app.home.heroAll')}
+                                {libraryFilter === 'favorites' && t('app.home.heroFavorites')}
+                                {libraryFilter === 'installed' && t('app.home.heroInstalled')}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-3 mb-1">
+                             {/* Time Filter */}
+                             <div className="relative group">
+                                <button className="p-2 rounded-lg bg-slate-800/50 hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors border border-slate-700/50">
+                                    <Clock size={20} />
+                                </button>
+                                <div className="absolute right-0 top-full mt-2 w-48 bg-slate-900 border border-slate-700 rounded-lg shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 overflow-hidden">
+                                    {(['all_time', 'past_2_weeks', 'past_year'] as const).map((filter) => (
+                                        <button
+                                            key={filter}
+                                            onClick={() => setTimeFilter(filter)}
+                                            className={clsx(
+                                                "w-full text-left px-4 py-2 text-sm hover:bg-slate-800 transition-colors",
+                                                timeFilter === filter ? "text-primary-400 bg-primary-900/10" : "text-slate-300"
+                                            )}
+                                        >
+                                            {t(`app.topbar.filter.${filter}`)}
+                                        </button>
+                                    ))}
+                                </div>
+                             </div>
+
+                             {/* View Mode */}
+                             <button 
+                                onClick={toggleViewMode}
+                                className={clsx(
+                                    "p-2 rounded-lg transition-colors border",
+                                    viewMode === 'couch' 
+                                        ? "bg-primary-600/20 text-primary-400 border-primary-500/30" 
+                                        : "bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50 hover:text-white"
+                                )}
+                                title={viewMode === 'couch' ? "Standard View" : "Couch Mode"}
+                             >
+                                <Tv size={20} />
+                             </button>
+
+                             {/* Add Game */}
+                             <button 
+                                onClick={() => setIsAddGameOpen(true)}
+                                className="p-2 rounded-lg bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-900/20 transition-all active:scale-95"
+                                title="Add Game"
+                             >
+                                <Plus size={20} />
+                             </button>
+                        </div>
                     </header>
 
                     {homeStats.total > 0 && (

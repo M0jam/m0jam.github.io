@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import clsx from 'clsx'
+import { Star } from 'lucide-react'
 
 interface GameCardProps {
   game: {
@@ -10,6 +11,10 @@ interface GameCardProps {
     is_installed?: boolean
     platform_game_id: string // Need this for Steam fallback
     status_tag?: string | null
+    rating?: number
+    metadata?: {
+      release_date?: string
+    }
   }
   onToggleFavorite: (id: string) => void
   onClick: (id: string) => void
@@ -25,6 +30,8 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
   const [isLoading, setIsLoading] = useState(!!game.box_art_url)
   
   const isInstalled = !!game.is_installed
+  const releaseYear = game.metadata?.release_date ? new Date(game.metadata.release_date).getFullYear() : null
+  const rating = game.rating ? (game.rating / 20).toFixed(1) : null
 
   const handleImageError = () => {
     // If the primary image fails, we can try fallbacks based on platform ID
@@ -119,15 +126,34 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
                 </svg>
             </div>
           </div>
-          <div className="absolute bottom-0 left-0 right-0 p-4">
-              <h3 className={clsx(
-                  "text-white font-bold leading-tight text-center drop-shadow-md transform transition-transform duration-300",
-                  showDetails ? "text-sm translate-y-4 group-hover:translate-y-0" : "text-lg translate-y-0"
-              )}>{game.title}</h3>
-              {game.is_installed && showDetails && (
-                  <div className="flex justify-center mt-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300 delay-75">
-                      <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full backdrop-blur-sm">Installed</span>
-                  </div>
+          <div className="absolute bottom-0 left-0 right-0 p-3 pt-8 bg-gradient-to-t from-slate-950 via-slate-950/90 to-transparent">
+              <h3 className="text-white font-bold leading-tight text-center drop-shadow-md text-sm mb-2 truncate px-1">{game.title}</h3>
+              
+              {showDetails && (
+                <div className="flex items-center justify-between text-[10px] font-medium min-h-[20px]">
+                   {/* Release Year - Bottom Left */}
+                   <div className="flex-shrink-0">
+                     {releaseYear && (
+                       <span title="Release Year" className="text-slate-300 bg-black/60 px-2 py-1 rounded-md backdrop-blur-md border border-white/10 shadow-sm">
+                         {releaseYear}
+                       </span>
+                     )}
+                   </div>
+
+                   {isInstalled && (
+                      <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">Installed</span>
+                   )}
+
+                   {/* Official Rating - Bottom Right */}
+                   <div className="flex-shrink-0">
+                    {rating && (
+                      <div title="Official Rating" className="flex items-center gap-1 text-slate-300 bg-black/60 px-2 py-1 rounded-md backdrop-blur-md border border-white/10 shadow-sm">
+                         <Star size={10} className="text-yellow-400 fill-yellow-400" />
+                         <span>{rating}</span>
+                      </div>
+                    )}
+                   </div>
+                </div>
               )}
           </div>
       </div>

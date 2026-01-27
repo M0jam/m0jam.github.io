@@ -40,6 +40,17 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
 
   const { t } = useTranslation()
 
+  const officialRating = typeof game?.rating === 'number' ? game.rating : null
+  const officialRatingClamped = officialRating != null ? Math.max(0, Math.min(officialRating, 100)) : null
+  const officialRatingOutOfFive = officialRatingClamped != null ? Math.round((officialRatingClamped / 100) * 5) : null
+  const releaseYear = (() => {
+    const dateString = game?.metadata?.release_date || game?.release_date
+    if (!dateString) return null
+    const parsed = new Date(dateString)
+    const year = parsed.getFullYear()
+    return Number.isNaN(year) ? null : year
+  })()
+
   useEffect(() => {
     if (isOpen && gameId) {
       let hasData = !!game
@@ -277,8 +288,29 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
                     </div>
                     
                     <div className="absolute bottom-0 left-0 p-8 w-full flex items-end gap-6">
-                        <div className="w-48 aspect-[2/3] rounded-lg shadow-2xl border border-slate-700 overflow-hidden bg-slate-800 shrink-0 transform translate-y-12">
+                        <div className="w-48 aspect-[2/3] rounded-lg shadow-2xl border border-slate-700 overflow-hidden bg-slate-800 shrink-0 transform translate-y-12 relative">
                             {game.box_art_url && <img src={game.box_art_url} className="w-full h-full object-cover" />}
+                            <div className="absolute inset-0 pointer-events-none">
+                              <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[10px] font-medium text-slate-100">
+                                {releaseYear ?? '–'}
+                              </div>
+                              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[10px] font-medium text-slate-100 flex items-center gap-1">
+                                <div className="flex items-center gap-0.5">
+                                  {[1, 2, 3, 4, 5].map(star => (
+                                    <Star
+                                      key={star}
+                                      className={clsx(
+                                        'w-3 h-3',
+                                        (officialRatingOutOfFive || 0) >= star
+                                          ? 'text-yellow-400 fill-yellow-400'
+                                          : 'text-slate-600'
+                                      )}
+                                    />
+                                  ))}
+                                </div>
+                                <span>{officialRatingClamped != null ? Math.round(officialRatingClamped) : '–'}</span>
+                              </div>
+                            </div>
                         </div>
                         <div className="flex-1 mb-4">
                             <h1 className="text-4xl font-bold text-white mb-2 drop-shadow-md flex items-center gap-3">
