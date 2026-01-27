@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2, Home, Newspaper, Settings, LayoutGrid } from 'lucide-react';
 import { motion, useScroll, useTransform } from 'framer-motion';
 
@@ -17,31 +17,6 @@ function App() {
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 500], [0, 200]);
   const y2 = useTransform(scrollY, [0, 500], [0, -150]);
-
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
-    script.async = true;
-    script.onload = () => {
-      try {
-        const overlay = (window as any).kofiWidgetOverlay;
-        if (overlay && typeof overlay.draw === 'function') {
-          overlay.draw('m0jam', {
-            type: 'floating-chat',
-            'floating-chat.donateButton.text': 'Support Me',
-            'floating-chat.donateButton.background-color': '#00b9fe',
-            'floating-chat.donateButton.text-color': '#fff'
-          });
-        }
-      } catch {}
-    };
-    document.body.appendChild(script);
-    return () => {
-      try {
-        document.body.removeChild(script);
-      } catch {}
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-primary-500/30 overflow-x-hidden">
