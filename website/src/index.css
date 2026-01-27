@@ -13,3 +13,18 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
+/* Ko-fi Widget Customization */
+.floatingchat-container-wrap {
+  background-color: transparent !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+.floatingchat-container-wrap iframe {
+  background-color: transparent !important;
+}
+
+/* Target specific iframe ID pattern if class doesn't work */
+iframe[id^="kofi-widget-overlay"] {
+  background: transparent !important;
+}
