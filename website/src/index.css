@@ -12,3 +12,15 @@ body {
   color: white;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
 }
+
+/* Ko-fi Widget Overrides */
+/* Removes the default white background from the widget container and iframe */
+.floatingchat-container-wrap,
+.floatingchat-container-wrap-mobi {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+iframe[id^="kofi-wo-container"] {
+  background: transparent !important;
+}
