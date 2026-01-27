@@ -3,6 +3,7 @@ import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Che
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { AuthModal } from './components/AuthModal';
 import { ProfileTab } from './components/ProfileTab';
+import { supabase } from './lib/supabaseClient';
 
 const games = [
   { id: 1, title: "Cyberpunk 2077", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1091500/library_600x900.jpg", year: 2020, developer: "CD Projekt Red", rating: 4.5 },
@@ -21,8 +22,39 @@ function App() {
   const y2 = useTransform(scrollY, [0, 500], [0, -150]);
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
+  const [user, setUser] = useState<{ username: string; email: string; id?: string } | null>(null);
   const [currentView, setCurrentView] = useState<'home' | 'profile'>('home');
+
+  useEffect(() => {
+    // Check for initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        setUser({
+          username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          id: session.user.id
+        });
+      }
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        setUser({
+          username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'User',
+          email: session.user.email || '',
+          id: session.user.id
+        });
+      } else {
+        setUser(null);
+        setCurrentView('home');
+      }
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, []);
 
   useEffect(() => {
     const script = document.createElement('script');
@@ -50,9 +82,9 @@ function App() {
     setIsAuthOpen(false);
   };
 
-  const handleLogout = () => {
-    setUser(null);
-    setCurrentView('home');
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    // State update handled by onAuthStateChange
   };
 
   return (
