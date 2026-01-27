@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2, Home, Newspaper, Settings, LayoutGrid } from 'lucide-react';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2, Home, Newspaper, Settings, LayoutGrid, LogIn } from 'lucide-react';
+import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
+import { AuthModal } from './components/AuthModal';
 
 const games = [
   { id: 1, title: "Cyberpunk 2077", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1091500/library_600x900.jpg", year: 2020, developer: "CD Projekt Red", rating: 4.5 },
@@ -17,6 +18,14 @@ function App() {
   const { scrollY } = useScroll();
   const y1 = useTransform(scrollY, [0, 500], [0, 200]);
   const y2 = useTransform(scrollY, [0, 500], [0, -150]);
+
+  const [isAuthOpen, setIsAuthOpen] = useState(false);
+  const [user, setUser] = useState<{ username: string; email: string } | null>(null);
+
+  const handleLoginSuccess = (userData: any) => {
+    setUser(userData);
+    setIsAuthOpen(false);
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-primary-500/30 overflow-x-hidden">
@@ -36,6 +45,24 @@ function App() {
             >
               <Github size={24} />
             </a>
+
+            {user ? (
+              <div className="flex items-center gap-3 pl-4 border-l border-white/10">
+                <span className="text-sm font-medium text-slate-300 hidden sm:block">{user.username}</span>
+                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold">
+                  {user.username[0].toUpperCase()}
+                </div>
+              </div>
+            ) : (
+              <button
+                onClick={() => setIsAuthOpen(true)}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+              >
+                <LogIn size={16} />
+                Sign In
+              </button>
+            )}
+
             <a 
               href={downloadUrl}
               className="bg-primary-600 hover:bg-primary-500 text-white px-6 py-2 rounded-full font-medium transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] flex items-center gap-2"
@@ -46,6 +73,16 @@ function App() {
           </div>
         </div>
       </nav>
+
+      <AnimatePresence>
+        {isAuthOpen && (
+          <AuthModal 
+            isOpen={isAuthOpen} 
+            onClose={() => setIsAuthOpen(false)} 
+            onLoginSuccess={handleLoginSuccess}
+          />
+        )}
+      </AnimatePresence>
 
       {/* Hero Section */}
       <section className="pt-32 pb-20 px-6 relative overflow-hidden">
