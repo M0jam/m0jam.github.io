@@ -26,8 +26,15 @@ function App() {
   const [currentView, setCurrentView] = useState<'home' | 'profile'>('home');
 
   useEffect(() => {
+    // If Supabase is not configured (e.g. missing env vars), skip auth initialization
+    if (!supabase) {
+      console.warn('Supabase client not initialized. Auth features disabled.');
+      return;
+    }
+    const sb = supabase;
+
     // Check for initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    sb.auth.getSession().then(({ data: { session } }) => {
       if (session?.user) {
         setUser({
           username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'User',
@@ -38,7 +45,7 @@ function App() {
     });
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
       if (session?.user) {
         setUser({
           username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'User',
@@ -81,8 +88,13 @@ function App() {
   };
 
   const handleLogout = async () => {
-    await supabase.auth.signOut();
-    // State update handled by onAuthStateChange
+    if (supabase) {
+      await supabase.auth.signOut();
+    } else {
+      setUser(null);
+      setCurrentView('home');
+    }
+    // State update handled by onAuthStateChange if supabase exists
   };
 
   return (

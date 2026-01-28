@@ -26,9 +26,15 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
   if (!isOpen) return null;
 
   const handleGoogleLogin = async () => {
+    if (!supabase) {
+      setError('Authentication is not configured.');
+      return;
+    }
+    const sb = supabase;
+
     try {
       setIsLoading(true);
-      const { error } = await supabase.auth.signInWithOAuth({
+      const { error } = await sb.auth.signInWithOAuth({
         provider: 'google',
         options: {
           redirectTo: window.location.origin,
@@ -49,6 +55,12 @@ export function AuthModal({ isOpen, onClose, onLoginSuccess }: AuthModalProps) {
     // Simple Validation
     if (!email || !password || (mode === 'register' && !username)) {
       setError('Please fill in all fields');
+      setIsLoading(false);
+      return;
+    }
+
+    if (!supabase) {
+      setError('Authentication is not configured.');
       setIsLoading(false);
       return;
     }
