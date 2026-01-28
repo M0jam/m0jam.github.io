@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2, Home, Newspaper, Settings, LayoutGrid, LogIn } from 'lucide-react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
 import { AuthOverlay } from './components/Overlay/AuthOverlay';
-import { supabase } from './lib/supabaseClient';
 
 const games = [
   { id: 1, title: "Cyberpunk 2077", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1091500/library_600x900.jpg", year: 2020, developer: "CD Projekt Red", rating: 4.5 },
@@ -24,40 +23,21 @@ function App() {
   const [user, setUser] = useState<{ username: string; email: string; id?: string } | null>(null);
 
   useEffect(() => {
-    // If Supabase is not configured (e.g. missing env vars), skip auth initialization
-    if (!supabase) {
-      console.warn('Supabase client not initialized. Auth features disabled.');
-      return;
-    }
-    const sb = supabase;
-
-    // Check for initial session
-    sb.auth.getSession().then(({ data: { session } }) => {
-      if (session?.user) {
-        setUser({
-          username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          id: session.user.id
-        });
+    // Check for cookie-based session
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/me');
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user) {
+            setUser(data.user);
+          }
+        }
+      } catch (err) {
+        console.error('Session check failed', err);
       }
-    });
-
-    // Listen for auth changes
-    const { data: { subscription } } = sb.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          username: session.user.user_metadata?.username || session.user.email?.split('@')[0] || 'User',
-          email: session.user.email || '',
-          id: session.user.id
-        });
-      } else {
-        setUser(null);
-      }
-    });
-
-    return () => {
-      subscription.unsubscribe();
     };
+    checkSession();
   }, []);
 
   const handleLoginSuccess = (userData: any) => {
@@ -66,12 +46,12 @@ function App() {
   };
 
   const handleLogout = async () => {
-    if (supabase) {
-      await supabase.auth.signOut();
-    } else {
+    try {
+      await fetch('/api/logout');
       setUser(null);
+    } catch (err) {
+      console.error('Logout failed', err);
     }
-    // State update handled by onAuthStateChange if supabase exists
   };
 
   return (

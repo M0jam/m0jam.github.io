@@ -96,19 +96,21 @@ export function AuthForms({ onLoginSuccess, onClose }: AuthFormsProps) {
            }
         }
       } else {
-        // Login
-        const { data, error } = await sb.auth.signInWithPassword({
-          email,
-          password,
+        // Login via Netlify Function (Cookie Auth)
+        const response = await fetch('/api/auth', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password }),
         });
-        if (error) throw error;
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+
         if (data.user) {
-          const userProfile = {
-            email: data.user.email,
-            username: data.user.user_metadata?.username || data.user.email?.split('@')[0],
-            id: data.user.id
-          };
-          onLoginSuccess(userProfile);
+          onLoginSuccess(data.user);
           onClose();
         }
       }
