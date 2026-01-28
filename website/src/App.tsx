@@ -58,23 +58,21 @@ function App() {
 
   useEffect(() => {
     const script = document.createElement('script');
-    script.src = 'https://storage.ko-fi.com/cdn/scripts/overlay-widget.js';
+    script.src = 'https://storage.ko-fi.com/cdn/widget/Widget_2.js';
     script.async = true;
     script.onload = () => {
       // @ts-ignore
-      kofiWidgetOverlay.draw('playhub', {
-        'type': 'floating-chat',
-        'floating-chat.donateButton.text': 'Support Us',
-        'floating-chat.donateButton.background-color': '#794bc4',
-        'floating-chat.donateButton.text-color': '#fff'
-      });
+      if (window.kofiwidget2) {
+        // @ts-ignore
+        window.kofiwidget2.init('Buy me a Coffee', '#fafafa', 'D1D71M4YEA');
+        // @ts-ignore
+        window.kofiwidget2.draw();
+      }
     };
     document.body.appendChild(script);
     return () => {
-      // Cleanup if needed, though usually this widget persists
-      // document.body.removeChild(script); 
-      // Removing script tag doesn't always remove the widget iframe, but for now this is fine.
-    }
+      // Cleanup if needed
+    };
   }, []);
 
   const handleLoginSuccess = (userData: any) => {
