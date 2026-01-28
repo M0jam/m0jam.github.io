@@ -11,6 +11,13 @@ body {
   background-color: #020617; /* Slate 950 */
   color: white;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  min-height: 100vh;
+}
+
+#root {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 /* Ko-fi Widget Customization */

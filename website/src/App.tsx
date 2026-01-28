@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2, Home, Newspaper, Settings, LayoutGrid, LogIn } from 'lucide-react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { AuthModal } from './components/AuthModal';
-import { ProfileTab } from './components/ProfileTab';
+import { AuthOverlay } from './components/Overlay/AuthOverlay';
 import { supabase } from './lib/supabaseClient';
 
 const games = [
@@ -23,7 +22,6 @@ function App() {
 
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [user, setUser] = useState<{ username: string; email: string; id?: string } | null>(null);
-  const [currentView, setCurrentView] = useState<'home' | 'profile'>('home');
 
   useEffect(() => {
     // If Supabase is not configured (e.g. missing env vars), skip auth initialization
@@ -54,7 +52,6 @@ function App() {
         });
       } else {
         setUser(null);
-        setCurrentView('home');
       }
     });
 
@@ -82,6 +79,23 @@ function App() {
     };
   }, []);
 
+  useEffect(() => {
+    const styleId = 'kofi-toggle-style';
+    let style = document.getElementById(styleId);
+    if (isAuthOpen) {
+      if (!style) {
+        style = document.createElement('style');
+        style.id = styleId;
+        style.innerHTML = `[id^="kofi-widget-overlay"] { display: none !important; }`;
+        document.head.appendChild(style);
+      }
+    } else {
+      if (style) {
+        style.remove();
+      }
+    }
+  }, [isAuthOpen]);
+
   const handleLoginSuccess = (userData: any) => {
     setUser(userData);
     setIsAuthOpen(false);
@@ -92,7 +106,6 @@ function App() {
       await supabase.auth.signOut();
     } else {
       setUser(null);
-      setCurrentView('home');
     }
     // State update handled by onAuthStateChange if supabase exists
   };
@@ -103,7 +116,7 @@ function App() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <button 
-            onClick={() => setCurrentView('home')}
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <img src="/logo.png" alt="PlayHub Logo" className="w-10 h-10" />
@@ -121,8 +134,8 @@ function App() {
 
             {user ? (
               <button 
-                onClick={() => setCurrentView('profile')}
-                className={`flex items-center gap-3 pl-4 border-l border-white/10 transition-colors ${currentView === 'profile' ? 'opacity-100' : 'opacity-70 hover:opacity-100'}`}
+                onClick={() => setIsAuthOpen(true)}
+                className={`flex items-center gap-3 pl-4 border-l border-white/10 transition-colors opacity-70 hover:opacity-100`}
               >
                 <span className="text-sm font-medium text-slate-300 hidden sm:block">{user.username}</span>
                 <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold">
@@ -152,19 +165,18 @@ function App() {
 
       <AnimatePresence>
         {isAuthOpen && (
-          <AuthModal 
+          <AuthOverlay 
             isOpen={isAuthOpen} 
             onClose={() => setIsAuthOpen(false)} 
+            user={user}
             onLoginSuccess={handleLoginSuccess}
+            onLogout={handleLogout}
           />
         )}
       </AnimatePresence>
 
       <div className="flex-1">
-        {currentView === 'profile' ? (
-          <ProfileTab user={user} onLogOut={handleLogout} />
-        ) : (
-          <>
+        <>
             {/* Hero Section */}
             <section className="pt-32 pb-20 px-6 relative overflow-hidden">
               {/* Dynamic Background */}
@@ -173,7 +185,7 @@ function App() {
               
               <div className="max-w-7xl mx-auto text-center relative z-10">
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={{ opacity: 1, y: 0 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8 }}
                 >
@@ -438,7 +450,6 @@ function App() {
               </div>
             </section>
           </>
-        )}
       </div>
 
       {/* Footer */}
