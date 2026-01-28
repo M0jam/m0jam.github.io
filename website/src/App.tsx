@@ -60,42 +60,6 @@ function App() {
     };
   }, []);
 
-  useEffect(() => {
-    const script = document.createElement('script');
-    script.src = 'https://storage.ko-fi.com/cdn/widget/Widget_2.js';
-    script.async = true;
-    script.onload = () => {
-      // @ts-ignore
-      if (window.kofiwidget2) {
-        // @ts-ignore
-        window.kofiwidget2.init('Buy me a Coffee', '#fafafa', 'D1D71M4YEA');
-        // @ts-ignore
-        window.kofiwidget2.draw();
-      }
-    };
-    document.body.appendChild(script);
-    return () => {
-      // Cleanup if needed
-    };
-  }, []);
-
-  useEffect(() => {
-    const styleId = 'kofi-toggle-style';
-    let style = document.getElementById(styleId);
-    if (isAuthOpen) {
-      if (!style) {
-        style = document.createElement('style');
-        style.id = styleId;
-        style.innerHTML = `[id^="kofi-widget-overlay"] { display: none !important; }`;
-        document.head.appendChild(style);
-      }
-    } else {
-      if (style) {
-        style.remove();
-      }
-    }
-  }, [isAuthOpen]);
-
   const handleLoginSuccess = (userData: any) => {
     setUser(userData);
     setIsAuthOpen(false);
