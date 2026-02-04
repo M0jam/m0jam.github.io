@@ -2,6 +2,7 @@ import { ipcMain, BrowserWindow, net } from 'electron'
 import { exec, ExecException } from 'child_process'
 import { join } from 'path'
 import { dbManager } from '../database'
+import { classificationService } from './classification-service'
 import { randomUUID } from 'crypto'
 import { encryptToHex, decryptFromHex } from '../utils/secure-store'
 
@@ -367,7 +368,7 @@ export class GogService {
       // I'll use a deterministic UUID if possible, or check existence.
       // To be safe and simple, I will query first.
       
-      const existingGames = db.prepare('SELECT id, platform_game_id FROM games WHERE account_id = ?').all(accountId) as any[]
+          const existingGames = db.prepare('SELECT id, platform_game_id FROM games WHERE account_id = ?').all(accountId) as any[]
       const existingMap = new Map(existingGames.map(g => [g.platform_game_id, g.id]))
 
       let syncedCount = 0
@@ -494,9 +495,18 @@ export class GogService {
                     WHERE platform_game_id = ? AND id LIKE 'gog_%'
                 `)
                 
+                const getIdStmt = db.prepare("SELECT id FROM games WHERE platform_game_id = ? AND id LIKE 'gog_%'")
+
                 for (const update of updates) {
                     const fullExePath = update.exe ? join(update.path, update.exe) : null
                     updateStmt.run(update.path, fullExePath, update.id)
+                    
+                    const game = getIdStmt.get(update.id) as any
+                    if (game) {
+                        try {
+                            classificationService.applyClassification(game.id)
+                        } catch {}
+                    }
                 }
             })
             tx()

@@ -199,9 +199,25 @@ export class DatabaseManager {
         status TEXT DEFAULT 'open', -- 'open', 'closed', 'in_progress'
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
       );
+
+      CREATE TABLE IF NOT EXISTS classification_log (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        game_id TEXT NOT NULL,
+        old_type TEXT,
+        new_type TEXT NOT NULL,
+        confidence REAL,
+        reason TEXT,
+        source TEXT, -- 'auto', 'manual'
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY(game_id) REFERENCES games(id)
+      );
     `)
     try {
       this.db.prepare("ALTER TABLE games ADD COLUMN user_rating REAL DEFAULT 0").run();
+    } catch (error) {
+    }
+    try {
+      this.db.prepare("ALTER TABLE games ADD COLUMN app_type TEXT DEFAULT 'game'").run();
     } catch (error) {
     }
     try {
@@ -233,6 +249,18 @@ export class DatabaseManager {
     try {
       this.db.prepare("ALTER TABLE games ADD COLUMN playtime_seconds INTEGER DEFAULT 0").run();
       this.db.prepare("ALTER TABLE games ADD COLUMN last_played DATETIME").run();
+    } catch (error) {
+    }
+    try {
+      this.db.prepare("ALTER TABLE games ADD COLUMN classification_confidence REAL DEFAULT 0").run();
+    } catch (error) {
+    }
+    try {
+      this.db.prepare("ALTER TABLE games ADD COLUMN classification_reason TEXT").run();
+    } catch (error) {
+    }
+    try {
+      this.db.prepare("ALTER TABLE games ADD COLUMN user_override_app_type TEXT").run();
     } catch (error) {
     }
   }

@@ -77,7 +77,7 @@ export function SteamLibrary({ games, isLoading, onPlay, onInstallToggle, onTogg
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-              <span className="w-8 h-8 bg-[#171a21] rounded flex items-center justify-center">
+              <span className="w-8 h-8 bg-brand-steam rounded flex items-center justify-center">
                 <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.373 0 0 5.373 0 12s5.373 12 12 12 12-5.373 12-12S18.627 0 12 0zm0 2c5.523 0 10 4.477 10 10s-4.477 10-10 10S2 17.523 2 12 6.477 2 12 2zm.23 4.67a1.32 1.32 0 1 0 0 2.64 1.32 1.32 0 0 0 0-2.64zM9.06 8.52a2.86 2.86 0 1 0 0 5.72 2.86 2.86 0 0 0 0-5.72z"/></svg>
               </span>
               {t('steamLibrary.header')}

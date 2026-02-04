@@ -352,7 +352,7 @@ export function SocialPage({
                         <button type="submit" className="flex-1 bg-primary-600 hover:bg-primary-500 text-xs py-1 rounded text-white font-medium">
                           {t('social.addLocalButton')}
                         </button>
-                        <button type="button" onClick={openSteamFriends} className="flex-1 bg-[#171a21] hover:bg-[#2a475e] text-xs py-1 rounded text-white font-medium flex items-center justify-center gap-1">
+                        <button type="button" onClick={openSteamFriends} className="flex-1 bg-brand-steam hover:bg-brand-steam-hover text-xs py-1 rounded text-white font-medium flex items-center justify-center gap-1">
                             <span>{t('app.sidebar.steam')}</span>
                             <svg xmlns="http://www.w3.org/2000/svg" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                         </button>

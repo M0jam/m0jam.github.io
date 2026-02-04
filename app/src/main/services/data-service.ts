@@ -203,15 +203,15 @@ export class DataService {
       // Stats
       const stats = db.prepare(`
         SELECT 
-          COUNT(*) as totalGames,
-          SUM(CASE WHEN is_installed = 1 THEN 1 ELSE 0 END) as installedGames,
+          SUM(CASE WHEN app_type = 'game' THEN 1 ELSE 0 END) as totalGames,
+          SUM(CASE WHEN is_installed = 1 AND app_type = 'game' THEN 1 ELSE 0 END) as installedGames,
           SUM(playtime_seconds) as totalPlaytime,
           (
             SELECT COUNT(*) 
             FROM games g2
             JOIN game_tags gt ON gt.game_id = g2.id
             JOIN tags t ON t.id = gt.tag_id
-            WHERE t.name = 'Completed'
+            WHERE t.name = 'Completed' AND g2.app_type = 'game'
           ) as completedGames
         FROM games
       `).get() as any
@@ -219,7 +219,7 @@ export class DataService {
       // Recent Games
       const recentGames = db.prepare(`
         SELECT * FROM games 
-        WHERE last_played IS NOT NULL 
+        WHERE last_played IS NOT NULL AND app_type = 'game'
         ORDER BY last_played DESC 
         LIMIT 5
       `).all()
@@ -234,7 +234,7 @@ export class DataService {
       // Recommendation (Random installed game)
       const recommendation = db.prepare(`
         SELECT * FROM games 
-        WHERE is_installed = 1 
+        WHERE is_installed = 1 AND app_type = 'game'
         ORDER BY RANDOM() 
         LIMIT 1
       `).get()
@@ -335,9 +335,11 @@ export class DataService {
       let whereClause = ''
 
       if (filter === 'installed') {
-        whereClause = 'WHERE g.is_installed = 1'
+        whereClause = "WHERE g.is_installed = 1 AND g.app_type = 'game'"
       } else if (filter === 'favorites') {
-        whereClause = 'WHERE g.is_favorite = 1'
+        whereClause = "WHERE g.is_favorite = 1 AND g.app_type = 'game'"
+      } else if (filter === 'utilities') {
+        whereClause = "WHERE g.app_type = 'utility'"
       } else if (filter && filter.startsWith('tag:')) {
         const tagId = parseInt(filter.split(':')[1])
         if (!isNaN(tagId)) {
@@ -354,7 +356,7 @@ export class DataService {
                 ) AS status_tag
                FROM games g
                JOIN game_tags gt_filter ON gt_filter.game_id = g.id
-               WHERE gt_filter.tag_id = ?`
+               WHERE gt_filter.tag_id = ? AND g.app_type = 'game'`
             )
             .all(tagId)
         }
@@ -371,7 +373,7 @@ export class DataService {
                 LIMIT 1
               ) AS status_tag
              FROM games g
-             WHERE g.id LIKE ?`
+             WHERE g.id LIKE ? AND g.app_type = 'game'`
           )
           .all(`${filter}_%`)
       }
@@ -387,7 +389,7 @@ export class DataService {
             LIMIT 1
           ) AS status_tag
         FROM games g
-        ${whereClause}
+        ${whereClause || "WHERE g.app_type = 'game'"}
       `
 
       return db.prepare(baseQuery).all()

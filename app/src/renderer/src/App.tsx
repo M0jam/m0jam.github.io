@@ -12,13 +12,17 @@ import { SocialPage } from './components/SocialPage'
 import { WelcomeIntro } from './components/WelcomeIntro'
 import { RegistrationSuccess } from './components/RegistrationSuccess'
 import { Dashboard } from './components/Dashboard'
-import { WindowControls } from './components/WindowControls'
+import { TitleBar } from './components/TitleBar'
+import { Sidebar } from './components/Sidebar'
+import { PageTransition } from './components/PageTransition'
 import { CouchOverlay } from './components/CouchOverlay'
 import { electron } from './utils/electron'
+import { truncateText } from './utils/text'
 import clsx from 'clsx'
 import i18n from './i18n'
 import { useTranslation } from 'react-i18next'
-import { Hash, Tag, Search, Newspaper, Users, Plus, Tv, Clock } from 'lucide-react'
+import { Hash, Tag, Search, Newspaper, Users, Plus, Tv, Clock, Wrench, LayoutGrid, List, Monitor, Palette, Box, Cpu } from 'lucide-react'
+import { Reorder, motion, AnimatePresence } from 'framer-motion'
 
 const DISCORD_INVITE_URL: string | undefined =
   typeof import.meta !== 'undefined' && (import.meta as any).env && (import.meta as any).env.VITE_DISCORD_INVITE_URL
@@ -74,13 +78,7 @@ function formatRelativeTime(value: string | number | Date): string {
   return i18n.t('time.yearsAgo', { count: diffYears })
 }
 
-function truncateDescription(text: string, maxLength = 150): string {
-  if (!text) return ''
-  if (text.length <= maxLength) return text
-  const sliced = text.slice(0, maxLength)
-  const trimmed = sliced.replace(/\s+\S*$/, '')
-  return `${trimmed}…`
-}
+
 
 function App(): JSX.Element {
   const { t } = useTranslation()
@@ -124,6 +122,8 @@ function App(): JSX.Element {
   const [steamVisibleCount, setSteamVisibleCount] = useState(60)
   const [searchQuery, setSearchQuery] = useState('')
   const [isAddGameOpen, setIsAddGameOpen] = useState(false)
+  const [utilities, setUtilities] = useState<any[]>([])
+  const [activeSessions, setActiveSessions] = useState<any[]>([])
   const [themePreference, setThemePreference] = useState<'system' | 'dark' | 'light'>('system')
   const [resolvedTheme, setResolvedTheme] = useState<'dark' | 'light'>('dark')
   const [locale, setLocale] = useState<'en' | 'de'>('en')
@@ -133,7 +133,13 @@ function App(): JSX.Element {
   const [showOnboarding, setShowOnboarding] = useState(false)
   const [showTutorialIntro, setShowTutorialIntro] = useState(false)
   const [activeTutorial, setActiveTutorial] = useState<'accounts' | 'library' | 'social' | 'discord' | null>(null)
-  const [showWelcomeIntro, setShowWelcomeIntro] = useState(true)
+  const [showWelcomeIntro, setShowWelcomeIntro] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const stored = window.localStorage.getItem('playhub:onboardingSeen')
+      return !stored
+    }
+    return true
+  })
   const [showRegistrationSuccess, setShowRegistrationSuccess] = useState(false)
   const [introData, setIntroData] = useState<any>(null)
   const [viewMode, setViewMode] = useState<'grid' | 'couch'>(() => {
@@ -148,6 +154,8 @@ function App(): JSX.Element {
     }
     return 'all'
   })
+  const [recencyFilter, setRecencyFilter] = useState<'all_time' | 'past_2_weeks' | 'past_year'>('all_time')
+  const [backdropImage, setBackdropImage] = useState<string | null>(null)
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -275,6 +283,32 @@ function App(): JSX.Element {
   }, [selectedGameId, games, platformGames, steamGames, gogGames])
 
   const [isAppInitialized, setIsAppInitialized] = useState(false)
+  const [utilityViewMode, setUtilityViewMode] = useState<'grid' | 'list'>('grid')
+  const [utilityCategory, setUtilityCategory] = useState<'all' | 'wallpaper' | 'system' | 'customization' | 'other'>('all')
+  const [utilityOrder, setUtilityOrder] = useState<string[]>([])
+
+  useEffect(() => {
+    // Load utility preferences
+    const savedView = window.localStorage.getItem('playhub:utilityViewMode') as 'grid' | 'list' | null
+    if (savedView) setUtilityViewMode(savedView)
+    
+    const savedOrder = window.localStorage.getItem('playhub:utilityOrder')
+    if (savedOrder) {
+      try {
+        setUtilityOrder(JSON.parse(savedOrder))
+      } catch {}
+    }
+  }, [])
+
+  useEffect(() => {
+    window.localStorage.setItem('playhub:utilityViewMode', utilityViewMode)
+  }, [utilityViewMode])
+
+  useEffect(() => {
+    if (utilityOrder.length > 0) {
+      window.localStorage.setItem('playhub:utilityOrder', JSON.stringify(utilityOrder))
+    }
+  }, [utilityOrder])
 
   useEffect(() => {
     let isMounted = true
@@ -322,7 +356,6 @@ function App(): JSX.Element {
             if (suggestions && (suggestions.lastPlayed || suggestions.random)) {
                 if (isMounted) {
                   setIntroData(suggestions)
-                  setShowWelcomeIntro(true)
                 }
             } else {
                 if (isMounted) setShowWelcomeIntro(false)
@@ -442,6 +475,22 @@ function App(): JSX.Element {
   }, [activeTab])
 
   useEffect(() => {
+    if (activeTab === 'utilities') {
+      const fetchSessions = async () => {
+        try {
+          const sessions = await electron.ipcRenderer.invoke('playtime:get-active-sessions')
+          setActiveSessions(sessions || [])
+        } catch (e) {
+          console.error('Failed to fetch active sessions', e)
+        }
+      }
+      fetchSessions()
+      const interval = setInterval(fetchSessions, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [activeTab])
+
+  useEffect(() => {
     if (activeTab === 'social' && friends.length > 0 && !selectedFriendId) {
       setSelectedFriendId(friends[0].id)
     }
@@ -505,6 +554,16 @@ function App(): JSX.Element {
       } else if (activeTab === 'inventory') {
         const data = await electron.ipcRenderer.invoke('steam:get-inventory')
         setInventoryItems(data)
+      } else if (activeTab === 'utilities') {
+        const data = await electron.ipcRenderer.invoke('library:get', 'utilities')
+        const normalized = (data || []).map((g: any) => {
+          let metadata = g.metadata
+          if (typeof metadata === 'string') {
+            try { metadata = JSON.parse(metadata) } catch { metadata = null }
+          }
+          return { ...g, metadata }
+        })
+        setUtilities(normalized)
       }
     } catch (e) {
       console.error('Failed to refresh data', e)
@@ -723,6 +782,24 @@ function App(): JSX.Element {
     }
   }
 
+  const categorizeUtility = (u: any) => {
+    const text = (u.title + ' ' + (u.genres || []).join(' ')).toLowerCase()
+    if (text.includes('wallpaper') || text.includes('background') || text.includes('lively')) return 'wallpaper'
+    if (text.includes('system') || text.includes('cpu') || text.includes('gpu') || text.includes('monitor') || text.includes('cleaner')) return 'system'
+    if (text.includes('customiz') || text.includes('theme') || text.includes('skin') || text.includes('rainmeter') || text.includes('translucent')) return 'customization'
+    return 'other'
+  }
+
+  const getUtilityIcon = (u: any) => {
+    const cat = categorizeUtility(u)
+    if (cat === 'wallpaper') return Monitor
+    if (cat === 'system') return Cpu
+    if (cat === 'customization') return Palette
+    return Box
+  }
+
+
+
   const filteredHomeGames = useMemo(() => {
     const base = activePlatform ? platformGames : games
     let result = base
@@ -749,6 +826,18 @@ function App(): JSX.Element {
       result = result.filter((g: any) => g.status_tag && String(g.status_tag).toLowerCase().includes(statusFilter as string))
     }
 
+    // Strict Separation: Exclude utilities from Games tab
+    result = result.filter(g => {
+        // If app_type is explicitly 'game', keep it.
+        // If app_type is 'utility', exclude it.
+        if (g.app_type === 'utility') return false
+        if (g.app_type === 'game') return true
+        
+        // Fallback to categorization check if app_type is missing/unknown
+        // (This ensures existing utilities without app_type are also excluded)
+        return categorizeUtility(g) === 'other'
+    })
+
     if (platformFilter) {
       result = result.filter((g: any) => g.platform && String(g.platform).toLowerCase().includes(platformFilter as string))
     }
@@ -764,6 +853,24 @@ function App(): JSX.Element {
         })
     }
 
+    if (recencyFilter !== 'all_time') {
+        const now = Date.now()
+        const twoWeeks = 14 * 24 * 60 * 60 * 1000
+        const oneYear = 365 * 24 * 60 * 60 * 1000
+        
+        result = result.filter((g: any) => {
+            if (!g.last_played) return false
+            const playedTime = new Date(g.last_played).getTime()
+            if (recencyFilter === 'past_2_weeks') {
+                return (now - playedTime) <= twoWeeks
+            }
+            if (recencyFilter === 'past_year') {
+                return (now - playedTime) <= oneYear
+            }
+            return true
+        })
+    }
+
     if (!textTokens.length) return result
 
     const textQuery = textTokens.join(' ').toLowerCase()
@@ -773,7 +880,47 @@ function App(): JSX.Element {
       if (g.platform && String(g.platform).toLowerCase().includes(textQuery)) return true
       return false
     })
-  }, [games, platformGames, activePlatform, searchQuery])
+  }, [games, platformGames, activePlatform, searchQuery, timeFilter, recencyFilter])
+
+  const filteredUtilities = useMemo(() => {
+    let result = utilities
+    
+    // Filter by Category
+    if (utilityCategory !== 'all') {
+      result = result.filter(u => categorizeUtility(u) === utilityCategory)
+    }
+
+    const raw = searchQuery.trim()
+    if (raw) {
+      const textQuery = raw.toLowerCase()
+      result = result.filter((g: any) => {
+        if (g.title && g.title.toLowerCase().includes(textQuery)) return true
+        if (g.status_tag && g.status_tag.toLowerCase().includes(textQuery)) return true
+        return false
+      })
+    }
+    
+    // Apply Sort Order (User Preference)
+    if (utilityOrder.length > 0) {
+      result = [...result].sort((a, b) => {
+        const indexA = utilityOrder.indexOf(a.id)
+        const indexB = utilityOrder.indexOf(b.id)
+        if (indexA === -1 && indexB === -1) return 0
+        if (indexA === -1) return 1
+        if (indexB === -1) return -1
+        return indexA - indexB
+      })
+    }
+    
+    return result
+  }, [utilities, searchQuery, utilityCategory, utilityOrder])
+
+  // Update order when utilities change (if new ones added)
+  useEffect(() => {
+     if (utilities.length > 0 && utilityOrder.length === 0) {
+         setUtilityOrder(utilities.map(u => u.id))
+     }
+  }, [utilities])
 
   return (
     <div className="h-screen w-screen flex flex-col bg-transparent text-slate-50 font-sans overflow-hidden relative">
@@ -787,18 +934,19 @@ function App(): JSX.Element {
 
       {/* Animated Background Layer */}
       <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        {backdropImage && (
+          <div 
+            className="absolute inset-0 bg-cover bg-center transition-all duration-700 ease-in-out opacity-30 blur-3xl scale-110"
+            style={{ backgroundImage: `url(${backdropImage})` }}
+          />
+        )}
         <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary-600/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob"></div>
         <div className="absolute top-[-10%] right-[-10%] w-[500px] h-[500px] bg-primary-500/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-2000"></div>
         <div className="absolute bottom-[-20%] left-[20%] w-[500px] h-[500px] bg-primary-700/40 rounded-full mix-blend-screen filter blur-3xl opacity-50 animate-blob animation-delay-4000"></div>
         <div className="absolute inset-0 bg-gradient-to-br from-slate-950/60 via-slate-950/40 to-slate-950/60" />
       </div>
 
-      <div className="fixed top-0 left-0 w-full h-8 z-[9999] flex items-start justify-between pointer-events-none">
-          <div className="flex-1 h-full pointer-events-auto" style={{ WebkitAppRegion: 'drag' } as any} />
-          <div className="pointer-events-auto mr-2 mt-2">
-            <WindowControls />
-          </div>
-      </div>
+      <TitleBar />
 
       <div className="flex-1 flex overflow-hidden relative z-10 w-full h-full">
       {!user ? (
@@ -814,8 +962,16 @@ function App(): JSX.Element {
       {!showRegistrationSuccess && showWelcomeIntro && (
         <WelcomeIntro 
           username={user.username} 
-          onComplete={() => setShowWelcomeIntro(false)} 
+          onComplete={() => {
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem('playhub:onboardingSeen', 'true')
+            }
+            setShowWelcomeIntro(false)
+          }} 
           onSelectGame={(id) => {
+            if (typeof window !== 'undefined') {
+              window.localStorage.setItem('playhub:onboardingSeen', 'true')
+            }
             setSelectedGameId(id)
             setShowWelcomeIntro(false)
           }}
@@ -843,6 +999,9 @@ function App(): JSX.Element {
                 <button
                   type="button"
                   onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.localStorage.setItem('playhub:onboardingSeen', 'true')
+                    }
                     setShowTutorialIntro(false)
                     setActiveTutorial('accounts')
                   }}
@@ -885,251 +1044,30 @@ function App(): JSX.Element {
           setIsAddGameOpen(false)
         }} 
       />
-      <div className="relative z-10 glass-panel border-r-0 rounded-2xl flex flex-col flex-shrink-0 select-none overflow-hidden w-64 m-4 p-4 transition-all duration-300 ease-in-out">
-        <div className="px-2 cursor-pointer mb-6" onClick={() => setActiveTab('home')}>
-            <Logo className="h-10 w-auto" />
-        </div>
-
-        <div className="px-2 mb-6">
-             <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-4 h-4" />
-                <input 
-                    type="text" 
-                    placeholder={t('app.topbar.searchGames')}
-                    value={searchQuery || ''}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full bg-slate-800/50 border border-slate-700/50 focus:border-primary-500/50 rounded-lg py-2 pl-9 pr-4 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-primary-500/50 transition-all placeholder:text-slate-500"
-                />
-            </div>
-        </div>
-        
-        <div className="flex-1 overflow-y-auto min-h-0 space-y-6 scrollbar-hide">
-             <div className="space-y-1">
-                <button 
-                    onClick={() => setActiveTab('news')}
-                    className={clsx("w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg font-medium transition-colors text-sm", activeTab === 'news' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
-                >
-                    <Newspaper size={16} />
-                    <span>{t('app.topbar.news')}</span>
-                </button>
-                 <button 
-                    onClick={() => setActiveTab('social')}
-                    className={clsx("w-full flex items-center gap-3 text-left px-3 py-2 rounded-lg font-medium transition-colors text-sm", activeTab === 'social' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
-                >
-                    <Users size={16} />
-                    <span>{t('app.topbar.social')}</span>
-                </button>
-            </div>
-
-            <div className="space-y-1 relative">
-            {activeTutorial === 'library' && (
-              <div className="absolute top-10 left-2 z-30">
-                <div className="relative bg-slate-900 border border-primary-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100 max-w-xs">
-                  <div className="absolute top-6 -left-2 w-0 h-0 border-t-4 border-b-4 border-r-4 border-t-transparent border-b-transparent border-r-slate-900" />
-                  <div className="flex items-center justify-between mb-1">
-                    <div className="font-semibold text-primary-200">
-                      {t('app.onboarding.libraryTitle')}
-                    </div>
-                    <div className="text-[10px] text-slate-400 border border-slate-600 rounded-full px-2 py-0.5">
-                      2 / 4
-                    </div>
-                  </div>
-                  <div className="text-[11px] text-slate-300">
-                    {t('app.onboarding.libraryTutorialHint')}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setActiveTutorial('social')}
-                      className="mt-2 inline-flex items-center px-2 py-1 rounded bg-primary-600/80 text-[10px] font-medium text-white hover:bg-primary-500"
-                    >
-                      {t('app.onboarding.nextStep')}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveTutorial(null);
-                      }}
-                      className="mt-2 inline-flex items-center px-2 py-1 rounded border border-slate-700 text-[10px] font-medium text-slate-400 hover:text-white hover:bg-slate-800"
-                    >
-                      {t('app.onboarding.skip')}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2">{t('app.sidebar.library')}</h3>
-            <button 
-                onClick={() => { setActiveTab('home'); setLibraryFilter('all'); setSelectedTagId(null); }}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'all' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
-            >
-                {t('app.sidebar.allGames')}
-            </button>
-            <button 
-                onClick={() => { setActiveTab('home'); setLibraryFilter('favorites'); setSelectedTagId(null); }}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'favorites' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
-            >
-                {t('app.sidebar.favorites')}
-            </button>
-            <button 
-                onClick={() => { setActiveTab('home'); setLibraryFilter('installed'); setSelectedTagId(null); }}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'home' && libraryFilter === 'installed' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
-            >
-                {t('app.sidebar.installed')}
-            </button>
-        </div>
-
-        <div className="space-y-1">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2">{t('app.sidebar.collection')}</h3>
-            <button 
-                onClick={() => setActiveTab('inventory')}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'inventory' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
-            >
-                {t('app.sidebar.inventory')}
-            </button>
-            <button 
-                onClick={() => setActiveTab('steam-games')}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'steam-games' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
-            >
-                {t('app.sidebar.steamLibrary')}
-            </button>
-            <button 
-                onClick={() => setActiveTab('gog-games')}
-                className={clsx("w-full text-left px-3 py-2 rounded-lg font-medium transition-colors", activeTab === 'gog-games' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800")}
-            >
-                {t('app.sidebar.gogLibrary', 'GOG Galaxy')}
-            </button>
-        </div>
-
-        <div className="space-y-1">
-            <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-wider px-2 mb-2 mt-4">{t('app.sidebar.tags')}</h3>
-            {allTags.length === 0 && (
-               <div className="px-3 py-2 text-xs text-slate-600 italic">No tags created</div>
-            )}
-            {allTags.map(tag => (
-              <button
-                key={tag.id}
-                onClick={() => { 
-                  setActiveTab('home'); 
-                  if (tag.id === selectedTagId) {
-                    setSelectedTagId(null)
-                    setLibraryFilter('all')
-                  } else {
-                    setSelectedTagId(tag.id)
-                    setLibraryFilter(`tag:${tag.id}`)
-                  }
-                }}
-                className={clsx(
-                  "w-full flex items-center gap-2 px-3 py-2 rounded-lg font-medium transition-colors text-sm", 
-                  selectedTagId === tag.id ? "bg-emerald-500/10 text-emerald-400" : "text-slate-400 hover:bg-slate-800"
-                )}
-              >
-                <Hash className="w-3 h-3 opacity-70" />
-                <span className="truncate">{tag.name}</span>
-              </button>
-            ))}
-        </div>
-
-
-        </div>
-
-        {user && (
-            <div className="pt-4 mt-4 border-t border-slate-800/50 flex-shrink-0">
-                <button
-                    onClick={() => setIsSettingsOpen(true)}
-                    className="flex items-center gap-3 w-full hover:bg-white/5 p-2 rounded-lg transition-colors group text-left"
-                >
-                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 overflow-hidden group-hover:border-primary-500 transition-colors shrink-0">
-                        {user.avatar_url ? (
-                            <img src={user.avatar_url} className="w-full h-full object-cover" />
-                        ) : (
-                            <div className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-bold">
-                                {user.username?.[0]?.toUpperCase()}
-                            </div>
-                        )}
-                    </div>
-                    <div className="min-w-0">
-                        <div className="text-xs font-medium text-slate-200 group-hover:text-white truncate">
-                            {user.username}
-                        </div>
-                        <div className="text-[10px] text-slate-500 group-hover:text-slate-400 truncate">
-                            {t('app.settings.profile')}
-                        </div>
-                    </div>
-                </button>
-            </div>
-        )}
-
-        {DISCORD_INVITE_URL && (
-          <div className="pt-4 mt-4 border-t border-slate-800/50 flex-shrink-0">
-             <button
-              type="button"
-              onClick={() => {
-                if (!DISCORD_INVITE_URL) return
-                if (electron.shell && electron.shell.openExternal) {
-                  electron.shell.openExternal(DISCORD_INVITE_URL)
-                } else {
-                  window.open(DISCORD_INVITE_URL, '_blank', 'noopener,noreferrer')
-                }
-              }}
-              className="relative w-full group overflow-hidden rounded-xl bg-[#5865F2]/10 hover:bg-[#5865F2] border border-[#5865F2]/20 hover:border-[#5865F2] transition-all duration-300 p-3 flex items-center gap-3"
-              title={t('app.topbar.joinDiscordTitle')}
-            >
-              <div className="w-8 h-8 rounded-lg bg-[#5865F2]/20 group-hover:bg-white/20 flex items-center justify-center text-[#5865F2] group-hover:text-white transition-colors">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  className="w-5 h-5"
-                  fill="currentColor"
-                >
-                   <path d="M20.317 4.369A18.16 18.16 0 0 0 16.558 3a12.5 12.5 0 0 0-.6 1.237 16.63 16.63 0 0 0-3.918 0A12.5 12.5 0 0 0 11.44 3a18.23 18.23 0 0 0-3.76 1.376C4.18 9.123 3.38 13.707 3.73 18.237A18.52 18.52 0 0 0 8.06 20a12.9 12.9 0 0 0 1.04-1.687 11.68 11.68 0 0 1-1.65-.8c.14-.1.278-.205.41-.313 3.176 1.488 6.61 1.488 9.75 0 .134.108.272.213.41.313-.53.32-1.087.59-1.668.8A12.9 12.9 0 0 0 15.94 20a18.46 18.46 0 0 0 4.33-1.763c.355-4.27-.61-8.82-3.953-13.868ZM9.68 14.61c-.9 0-1.64-.82-1.64-1.828s.72-1.828 1.64-1.828c.92 0 1.66.824 1.64 1.828 0 1.008-.72 1.828-1.64 1.828Zm4.64 0c-.9 0-1.64-.82-1.64-1.828s.72-1.828 1.64-1.828c.92 0 1.66.824 1.64 1.828 0 1.008-.72 1.828-1.64 1.828Z" />
-                </svg>
-              </div>
-              <div className="flex flex-col items-start text-left">
-                <span className="text-xs font-bold text-[#5865F2] group-hover:text-white transition-colors">Discord</span>
-                <span className="text-[10px] text-slate-400 group-hover:text-primary-100 transition-colors">Join Community</span>
-              </div>
-              
-              {activeTutorial === 'discord' && (
-                <div className="absolute bottom-full left-0 w-64 mb-4 z-50">
-                   <div className="relative bg-slate-900 border border-primary-500/60 rounded-xl px-3 py-2 shadow-lg text-xs text-slate-100">
-                    <div className="absolute -bottom-2 left-8 w-0 h-0 border-l-4 border-r-4 border-t-4 border-l-transparent border-r-transparent border-t-slate-900" />
-                    <div className="flex items-center justify-between mb-1">
-                      <div className="font-semibold text-primary-200">
-                        {t('app.onboarding.socialTitle')}
-                      </div>
-                      <div className="text-[10px] text-slate-400 border border-slate-600 rounded-full px-2 py-0.5">
-                        4 / 4
-                      </div>
-                    </div>
-                    <div className="text-[11px] text-slate-300">
-                      {t('app.onboarding.socialDiscordHint')}
-                    </div>
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveTutorial(null);
-                      }}
-                      className="mt-2 inline-flex items-center px-2 py-1 rounded bg-emerald-600/80 text-[10px] font-medium text-white hover:bg-emerald-500"
-                    >
-                      {t('app.onboarding.finishTutorial')}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </button>
-          </div>
-        )}
-      </div>
+      <Sidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        libraryFilter={libraryFilter}
+        setLibraryFilter={setLibraryFilter}
+        selectedTagId={selectedTagId}
+        setSelectedTagId={setSelectedTagId}
+        allTags={allTags}
+        user={user}
+        setIsSettingsOpen={setIsSettingsOpen}
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        activeTutorial={activeTutorial}
+        setActiveTutorial={setActiveTutorial}
+      />
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0 mr-4 my-4 gap-4">
         
         {/* Scrollable Content */}
         <div className={clsx("flex-1 relative z-10 rounded-2xl", (activeTab === 'social' || activeTab === 'dashboard') ? "flex flex-col p-0 overflow-hidden glass-panel" : "px-4 pb-4 overflow-y-auto custom-scrollbar")}>
+          <AnimatePresence mode="wait">
             {activeTab === 'dashboard' && (
+              <PageTransition key="dashboard" className="h-full flex flex-col">
               <Dashboard 
                 user={user}
                 onNavigate={(tab, filter) => {
@@ -1149,10 +1087,236 @@ function App(): JSX.Element {
                 onboardingStats={homeStats}
                 hasTags={allTags.length > 0}
               />
+              </PageTransition>
             )}
 
+            {activeTab === 'utilities' && (
+              <PageTransition key="utilities" className="flex flex-col h-full overflow-hidden">
+                {/* Header & Controls */}
+                <div className="flex flex-col gap-4 mb-6 px-2 flex-shrink-0">
+                  <div className="flex items-center justify-between">
+                    <h2 className="text-2xl font-bold text-white flex items-center gap-3">
+                      <Wrench className="text-primary-400" size={28} />
+                      {t('app.topbar.utilities', 'Utilities')}
+                    </h2>
+                    <div className="flex items-center gap-2 bg-slate-900/50 p-1 rounded-lg border border-slate-800">
+                       {/* View Toggles */}
+                       <button
+                         onClick={() => setUtilityViewMode('grid')}
+                         className={clsx(
+                           "p-2 rounded-md transition-all",
+                           utilityViewMode === 'grid' ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                         )}
+                         title="Grid View"
+                       >
+                         <LayoutGrid size={18} />
+                       </button>
+                       <button
+                         onClick={() => setUtilityViewMode('list')}
+                         className={clsx(
+                           "p-2 rounded-md transition-all",
+                           utilityViewMode === 'list' ? "bg-slate-700 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                         )}
+                         title="List View"
+                       >
+                         <List size={18} />
+                       </button>
+                    </div>
+                  </div>
+                  
+                  {/* Category Tabs */}
+                  <div className="flex items-center gap-2 overflow-x-auto pb-2 custom-scrollbar">
+                    {[
+                      { id: 'all', label: 'All Apps', icon: Box },
+                      { id: 'wallpaper', label: 'Wallpaper Tools', icon: Monitor },
+                      { id: 'system', label: 'System Tools', icon: Cpu },
+                      { id: 'customization', label: 'Customization', icon: Palette },
+                      { id: 'other', label: 'Other', icon: Hash },
+                    ].map((cat) => (
+                      <button
+                        key={cat.id}
+                        onClick={() => setUtilityCategory(cat.id as any)}
+                        className={clsx(
+                          "flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap border",
+                          utilityCategory === cat.id 
+                            ? "bg-primary-600/20 text-primary-400 border-primary-500/30 shadow-lg shadow-primary-900/20" 
+                            : "bg-slate-800/50 text-slate-400 border-slate-700/50 hover:bg-slate-700/50 hover:text-white hover:border-slate-600"
+                        )}
+                      >
+                        <cat.icon size={16} />
+                        {cat.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Content Area - Scrollable */}
+                <div className="flex-1 overflow-y-auto custom-scrollbar px-2 pb-8">
+                  {filteredUtilities.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-64 text-slate-500 gap-4 border-2 border-dashed border-slate-800 rounded-2xl bg-slate-900/20">
+                      <Wrench size={48} className="opacity-20" />
+                      <p>{t('app.utilities.empty', 'No utilities found in this category.')}</p>
+                    </div>
+                  ) : (
+                    utilityViewMode === 'grid' ? (
+                       // Grid View
+                       <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-6 gap-4">
+                         {filteredUtilities.map((app) => {
+                           const isRunning = activeSessions.some(s => s.game_id === app.id)
+                          const CategoryIcon = getUtilityIcon(app)
+                          return (
+                            <div key={app.id} className="relative group/card">
+                              <GameCard 
+                                game={app}
+                                onToggleFavorite={toggleFavorite}
+                                onClick={setSelectedGameId}
+                                onMouseEnter={() => setBackdropImage(app.background_url || app.box_art_url || null)}
+                                onMouseLeave={() => setBackdropImage(null)}
+                                showDetails={true}
+                              />
+                              {/* Custom Overlay for Utilities */}
+                              <div className="absolute inset-0 bg-slate-950/80 opacity-0 group-hover/card:opacity-100 transition-opacity duration-200 flex flex-col items-center justify-center gap-3 z-30 pointer-events-none group-hover/card:pointer-events-auto rounded-xl">
+                                 <button
+                                   onClick={(e) => { e.stopPropagation(); if (!isRunning) electron.ipcRenderer.invoke('game:launch', app.id); }}
+                                   disabled={isRunning}
+                                   className={clsx(
+                                     "px-4 py-2 rounded-lg text-sm font-bold shadow-lg transition-all transform hover:scale-105 flex items-center gap-2",
+                                     isRunning 
+                                       ? "bg-emerald-900/50 text-emerald-200 border border-emerald-500/30 cursor-default hover:scale-100"
+                                       : "bg-emerald-500 hover:bg-emerald-400 text-slate-900"
+                                   )}
+                                 >
+                                   {isRunning ? (
+                                       <>
+                                           <div className="w-2 h-2 bg-emerald-400 rounded-full animate-pulse" />
+                                           Running
+                                       </>
+                                   ) : (
+                                       <>
+                                           <div className="w-0 h-0 border-t-[5px] border-t-transparent border-l-[8px] border-l-slate-900 border-b-[5px] border-b-transparent ml-0.5" />
+                                           Launch
+                                       </>
+                                   )}
+                                 </button>
+                                 <button
+                                   onClick={(e) => { e.stopPropagation(); setSelectedGameId(app.id); }}
+                                   className="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium border border-slate-700 transition-colors flex items-center gap-2"
+                                 >
+                                   <Wrench size={14} />
+                                   Configure
+                                 </button>
+                              </div>
+
+                               {/* Running Indicator (Always visible if running, but hidden on hover to show button) */}
+                               {isRunning && (
+                                 <div className="absolute top-2 right-2 z-20 w-3 h-3 bg-emerald-500 rounded-full border border-slate-900 shadow-lg shadow-emerald-500/50 animate-pulse group-hover/card:opacity-0 transition-opacity" title="Running"></div>
+                               )}
+                             </div>
+                           )
+                         })}
+                       </div>
+                    ) : (
+                       // List View with Reorder
+                       <Reorder.Group 
+                         axis="y" 
+                         values={filteredUtilities.map(u => u.id)} 
+                         onReorder={(newOrder) => {
+                           if (utilityCategory === 'all' && !searchQuery.trim()) {
+                             setUtilityOrder(newOrder)
+                           }
+                         }}
+                         className="space-y-2"
+                       >
+                         {filteredUtilities.map((app) => {
+                           const isRunning = activeSessions.some(s => s.game_id === app.id)
+                           const CategoryIcon = getUtilityIcon(app)
+                           return (
+                             <Reorder.Item 
+                                key={app.id} 
+                                value={app.id}
+                                dragListener={utilityCategory === 'all' && !searchQuery.trim()}
+                                className="bg-slate-900/50 border border-slate-800 rounded-xl p-3 flex items-center gap-4 hover:bg-slate-800 transition-colors group select-none"
+                             >
+                                {/* Drag Handle */}
+                                <div className={clsx(
+                                  "p-2 text-slate-600 group-hover:text-slate-400 cursor-grab active:cursor-grabbing",
+                                  (utilityCategory !== 'all' || searchQuery.trim()) && "opacity-20 cursor-not-allowed"
+                                )}>
+                                  <LayoutGrid size={16} />
+                                </div>
+                                
+                                {/* Icon */}
+                                <div className="w-12 h-12 bg-slate-800 rounded-lg overflow-hidden flex-shrink-0 shadow-sm relative group/icon">
+                                  {app.box_art_url ? (
+                                    <img src={app.box_art_url} className="w-full h-full object-cover" draggable={false} />
+                                  ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-slate-600 bg-slate-800">
+                                      <CategoryIcon size={24} strokeWidth={1.5} />
+                                    </div>
+                                  )}
+                                  {isRunning && (
+                                    <div className="absolute inset-0 bg-emerald-500/20 ring-1 ring-inset ring-emerald-500/50"></div>
+                                  )}
+                                </div>
+
+                                {/* Info */}
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2">
+                                    <h3 className="font-semibold text-white truncate">{app.title}</h3>
+                                    {isRunning && (
+                                      <span className="flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider text-emerald-400 bg-emerald-900/30 px-1.5 py-0.5 rounded border border-emerald-900/50">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                                        Running
+                                      </span>
+                                    )}
+                                  </div>
+                                  <div className="flex items-center gap-2 text-xs text-slate-400 mt-0.5">
+                                    <span className="truncate max-w-[300px] opacity-80">
+                                      {truncateText(app.metadata?.description || app.summary || 'No description available', 60)}
+                                    </span>
+                                  </div>
+                                </div>
+
+                                {/* Actions */}
+                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                     <button
+                                        onClick={(e) => { e.stopPropagation(); if (!isRunning) electron.ipcRenderer.invoke('game:launch', app.id); }}
+                                        disabled={isRunning}
+                                        className={clsx(
+                                          "px-3 py-1.5 rounded-lg text-xs font-medium shadow-lg transition-colors flex items-center gap-1.5",
+                                          isRunning 
+                                            ? "bg-emerald-900/50 text-emerald-200 border border-emerald-500/30 cursor-default"
+                                            : "bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-900/20"
+                                        )}
+                                     >
+                                        {isRunning ? (
+                                            <>
+                                                <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse" />
+                                                Running
+                                            </>
+                                        ) : (
+                                            'Launch'
+                                        )}
+                                     </button>
+                                     <button
+                                        onClick={() => setSelectedGameId(app.id)}
+                                        className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700"
+                                        title="Configure"
+                                     >
+                                        <Wrench size={14} />
+                                     </button>
+                                  </div>
+                             </Reorder.Item>
+                           )
+                         })}
+                       </Reorder.Group>
+                    )
+                  )}
+                </div>
+              </PageTransition>
+            )}
             {activeTab === 'home' && (
-                <>
+                <PageTransition key="home">
                     {/* Onboarding Hints also shown on Home if desired, but maybe user wants it only on Dashboard. 
                         Let's keep it here too for now as it was original behavior, or remove it if redundant.
                         User asked for "Dashboard Onboarding Hints". 
@@ -1189,10 +1353,10 @@ function App(): JSX.Element {
                                     {(['all_time', 'past_2_weeks', 'past_year'] as const).map((filter) => (
                                         <button
                                             key={filter}
-                                            onClick={() => setTimeFilter(filter)}
+                                            onClick={() => setRecencyFilter(filter)}
                                             className={clsx(
                                                 "w-full text-left px-4 py-2 text-sm hover:bg-slate-800 transition-colors",
-                                                timeFilter === filter ? "text-primary-400 bg-primary-900/10" : "text-slate-300"
+                                                recencyFilter === filter ? "text-primary-400 bg-primary-900/10" : "text-slate-300"
                                             )}
                                         >
                                             {t(`app.topbar.filter.${filter}`)}
@@ -1333,7 +1497,7 @@ function App(): JSX.Element {
                             <div className="w-72 flex-shrink-0 space-y-4">
                               <div className="p-4 bg-slate-900 border border-slate-800 rounded-xl">
                                 <div className="flex items-center gap-3 mb-3">
-                                  <div className="w-9 h-9 rounded bg-[#171a21] flex items-center justify-center text-xs font-semibold">
+                                  <div className="w-9 h-9 rounded bg-brand-steam flex items-center justify-center text-xs font-semibold">
                                     {t('app.sidebar.steam')}
                                   </div>
                                   <div>
@@ -1424,11 +1588,12 @@ function App(): JSX.Element {
                           </div>
                         </div>
                     )}
-                </>
+                </PageTransition>
             )}
 
             {/* News tab: featured hero card + responsive grid of secondary stories */}
             {activeTab === 'social' && (
+              <PageTransition key="social" className="h-full">
               <SocialPage
                 user={user}
                 friends={friends}
@@ -1441,10 +1606,11 @@ function App(): JSX.Element {
                 onAddLocalFriend={handleSocialAddFriend}
                 onRefresh={refreshData}
               />
+              </PageTransition>
             )}
 
             {activeTab === 'news' && (
-                <div className="max-w-6xl mx-auto">
+                <PageTransition key="news" className="max-w-6xl mx-auto">
                     <div className="flex items-center justify-between mb-6">
                       <h2 className="text-3xl font-bold">{t('app.news.title')}</h2>
                       <button 
@@ -1543,7 +1709,7 @@ function App(): JSX.Element {
                                         {featured.title}
                                       </h3>
                                       <p className="text-slate-200/90 text-sm md:text-base line-clamp-3">
-                                        {truncateDescription(featured.summary, 150)}
+                                        {truncateText(featured.summary, 150)}
                                       </p>
                                     </div>
                                   </div>
@@ -1606,7 +1772,7 @@ function App(): JSX.Element {
                                           {item.title}
                                         </h3>
                                         <p className="text-slate-400 text-xs md:text-sm line-clamp-2">
-                                          {truncateDescription(item.summary, 150)}
+                                          {truncateText(item.summary, 150)}
                                         </p>
                                       </div>
                                     </button>
@@ -1618,10 +1784,10 @@ function App(): JSX.Element {
                         })()}
                       </>
                     )}
-                </div>
+                </PageTransition>
             )}
             {activeTab === 'inventory' && (
-                <div className="max-w-7xl mx-auto">
+                <PageTransition key="inventory" className="max-w-7xl mx-auto">
                     <header className="mb-8 flex items-center justify-between">
                         <h2 className="text-3xl font-bold">{t('app.inventory.title')}</h2>
                         <div className="text-sm text-slate-400">
@@ -1657,10 +1823,10 @@ function App(): JSX.Element {
                             ))}
                         </div>
                     )}
-                </div>
+                </PageTransition>
             )}
             {activeTab === 'steam-games' && (
-                <div className="h-full">
+                <PageTransition key="steam-games" className="h-full">
                     <SteamLibrary 
                       games={steamGames}
                       isLoading={isLoadingSteamGames}
@@ -1669,9 +1835,10 @@ function App(): JSX.Element {
                       onToggleFavorite={toggleFavorite}
                       onRefresh={handleSteamRefresh}
                     />
-                </div>
+                </PageTransition>
             )}
             {activeTab === 'gog-games' && (
+            <PageTransition key="gog-games" className="h-full">
             <div className="h-full">
                 <GogLibrary 
                   games={gogGames}
@@ -1682,7 +1849,9 @@ function App(): JSX.Element {
                   onRefresh={handleGogRefresh}
                 />
             </div>
+            </PageTransition>
           )}
+          </AnimatePresence>
         </div>
       </div>
       {notification && (

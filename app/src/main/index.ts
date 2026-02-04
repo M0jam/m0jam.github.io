@@ -47,6 +47,7 @@ import './services/epic-service'
 import './services/gog-service'
 import './services/feedback-service'
 import './services/system-service'
+import './services/classification-service'
 
 import './services/update-service'
 import './services/tag-service'

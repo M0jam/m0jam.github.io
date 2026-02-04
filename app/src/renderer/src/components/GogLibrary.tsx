@@ -107,7 +107,7 @@ export function GogLibrary({ games, isLoading, onPlay, onLaunch, onInstallToggle
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="text-2xl font-bold text-white flex items-center gap-3">
-              <span className="w-8 h-8 bg-[#5d2d88] rounded flex items-center justify-center text-white font-bold">
+              <span className="w-8 h-8 bg-brand-gog rounded flex items-center justify-center text-white font-bold">
                 G
               </span>
               {t('gogLibrary.header', 'GOG Galaxy Library')}

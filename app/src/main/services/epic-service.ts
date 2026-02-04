@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow } from 'electron'
 import { dbManager } from '../database'
+import { classificationService } from './classification-service'
 import { randomUUID } from 'crypto'
 
 interface EpicTokenData {
@@ -368,6 +369,7 @@ export class EpicService {
       })
 
       insertMany(rowsToInsert)
+
       return rowsToInsert.length
 
     } catch (e) {
@@ -417,6 +419,16 @@ export class EpicService {
       })
 
       insertMany(rowsToInsert)
+
+      // Apply classification
+      try {
+        for (const row of rowsToInsert) {
+           await classificationService.applyClassification(row.id)
+        }
+      } catch (e) {
+        console.warn('[Epic] Classification failed:', e)
+      }
+
       return rowsToInsert.length
 
     } catch (e) {

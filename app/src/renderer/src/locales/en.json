@@ -192,7 +192,7 @@
       "discordTitle": "Post to Discord feedback channel",
       "discordDescription": "When enabled, your feedback is also sent to a private Discord channel.",
       "sending": "Sending...",
-      "submit": "Submit Feedback"
+      "submit": "Send Feedback"
     },
     "system": {
       "title": "System Performance",
@@ -275,6 +275,9 @@
     }
   },
   "app": {
+    "settings": {
+      "profile": "Profile Settings"
+    },
     "sidebar": {
       "library": "Library",
       "allGames": "All Games",
@@ -293,9 +296,13 @@
     "topbar": {
       "news": "News",
       "social": "Social",
+      "utilities": "Utilities",
       "searchGames": "Search games... (e.g. status:Backlog platform:steam)",
       "online": "Online",
       "joinDiscordTitle": "Join the PlayHub Discord"
+    },
+    "utilities": {
+      "empty": "No utilities found."
     },
     "home": {
       "heroAll": "What do you want to play right now?",

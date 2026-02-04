@@ -267,6 +267,9 @@
     }
   },
   "app": {
+    "settings": {
+      "profile": "Profil-Einstellungen"
+    },
     "sidebar": {
       "library": "Bibliothek",
       "allGames": "Alle Spiele",
@@ -285,9 +288,13 @@
     "topbar": {
       "news": "News",
       "social": "Social",
+      "utilities": "Dienstprogramme",
       "searchGames": "Spiele suchen... (z.B. status:Backlog platform:steam)",
       "online": "Online",
       "joinDiscordTitle": "PlayHub-Discord beitreten"
+    },
+    "utilities": {
+      "empty": "Keine Dienstprogramme gefunden."
     },
     "home": {
       "heroAll": "Was möchtest du gerade spielen?",

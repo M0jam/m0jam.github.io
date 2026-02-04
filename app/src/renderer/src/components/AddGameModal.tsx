@@ -71,8 +71,8 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
-      <div className="w-full max-w-lg bg-gray-900 rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-200">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+      <div className="w-full max-w-lg bg-slate-900 rounded-xl shadow-2xl border border-white/10 overflow-hidden animate-in fade-in zoom-in duration-200">
         <div className="flex items-center justify-between p-6 border-b border-white/10 bg-white/5">
           <h2 className="text-xl font-bold text-white flex items-center gap-2">
             <Plus className="w-5 h-5 text-primary-400" />
@@ -80,7 +80,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
           </h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-gray-400 hover:text-white"
+            className="p-2 hover:bg-white/10 rounded-lg transition-colors text-slate-400 hover:text-white"
           >
             <X className="w-5 h-5" />
           </button>
@@ -94,22 +94,22 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
           )}
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">{t('addGame.gameTitleLabel')}</label>
+            <label className="block text-sm font-medium text-slate-300">{t('addGame.gameTitleLabel')}</label>
             <div className="relative">
-              <Gamepad2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <Gamepad2 className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 placeholder={t('addGame.gameTitlePlaceholder')}
-                className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                 autoFocus
               />
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">{t('addGame.executableLabel')}</label>
+            <label className="block text-sm font-medium text-slate-300">{t('addGame.executableLabel')}</label>
             <div className="flex gap-2">
               <div className="relative flex-1">
                 <input
@@ -117,7 +117,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
                   value={executablePath}
                   onChange={(e) => setExecutablePath(e.target.value)}
                   placeholder={t('addGame.executablePlaceholder')}
-                  className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 px-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                  className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 px-4 text-white placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
                 />
               </div>
               <button
@@ -129,19 +129,19 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
                 {t('addGame.browse')}
               </button>
             </div>
-            <p className="text-xs text-gray-500">{t('addGame.executableHelp')}</p>
+            <p className="text-xs text-slate-500">{t('addGame.executableHelp')}</p>
           </div>
 
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-300">{t('addGame.coverLabel')}</label>
+            <label className="block text-sm font-medium text-slate-300">{t('addGame.coverLabel')}</label>
             <div className="relative">
-              <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
+              <ImageIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
               <input
                 type="text"
                 value={imageUrl}
                 onChange={(e) => setImageUrl(e.target.value)}
                 placeholder={t('addGame.coverPlaceholder')}
-                className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder-gray-600 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
+                className="w-full bg-black/40 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-white placeholder-slate-500 focus:outline-none focus:border-primary-500 focus:ring-1 focus:ring-primary-500 transition-colors"
               />
             </div>
             {imageUrl && (
@@ -166,7 +166,7 @@ export function AddGameModal({ isOpen, onClose, onGameAdded }: AddGameModalProps
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white transition-colors"
+              className="px-4 py-2 text-sm font-medium text-slate-400 hover:text-white transition-colors"
             >
               {t('addGame.cancel')}
             </button>

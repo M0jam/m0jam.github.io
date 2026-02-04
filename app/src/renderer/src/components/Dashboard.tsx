@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react'
 import { electron } from '../utils/electron'
+import { stripSteamBBCode } from '../utils/text'
 import { useTranslation } from 'react-i18next'
 import { OnboardingHints } from './OnboardingHints'
 import { 
@@ -201,9 +202,9 @@ export function Dashboard({
 
   if (!data) {
     return (
-      <div className="flex-1 flex flex-col items-center justify-center text-slate-400 h-full min-h-[200px]">
+      <div className="flex-1 flex flex-col items-center justify-center text-white/40 h-full min-h-[200px]">
         <AlertCircle size={48} className="mb-4 text-red-400" />
-        <p className="mb-2 text-lg font-medium text-slate-300">Unable to load dashboard data</p>
+        <p className="mb-2 text-lg font-medium text-white/80">Unable to load dashboard data</p>
         {error && (
           <div className="mb-6 p-4 bg-red-500/10 border border-red-500/20 rounded-lg max-w-md text-center">
             <p className="text-sm text-red-400 font-mono">{error}</p>
@@ -211,7 +212,7 @@ export function Dashboard({
         )}
         <button 
           onClick={() => window.location.reload()} 
-          className="px-6 py-3 bg-slate-800 hover:bg-slate-700 rounded-xl text-sm font-semibold text-slate-200 transition-colors border border-slate-700"
+          className="px-6 py-3 bg-white/10 hover:bg-white/20 rounded-xl text-sm font-semibold text-white/90 transition-all duration-200 active:scale-95 border border-white/10"
         >
           Reload PlayHub
         </button>
@@ -248,31 +249,31 @@ export function Dashboard({
             <div className="h-4 w-px bg-white/10 mx-2" />
 
             <button 
-              onClick={() => setShowConfig(!showConfig)}
-              className="p-1 hover:bg-white/10 rounded-full transition-colors text-slate-500 hover:text-white"
-              title={t('dashboard.customize', 'Customize Dashboard')}
-            >
-              <Settings size={14} />
-            </button>
+                onClick={() => setShowConfig(!showConfig)}
+                className="p-1 hover:bg-white/10 rounded-full transition-all duration-200 ease-in-out text-slate-500 hover:text-white active:scale-90"
+                title={t('dashboard.customize', 'Customize Dashboard')}
+              >
+                <Settings size={14} />
+              </button>
           </div>
           
           {showConfig && (
-            <div className="absolute z-50 mt-2 bg-slate-900 border border-slate-700 rounded-xl p-4 shadow-xl w-64 animate-in fade-in zoom-in-95 duration-200">
-              <div className="flex items-center justify-between mb-3 border-b border-slate-800 pb-2">
-                <span className="text-xs font-bold text-slate-300 uppercase tracking-wider">{t('dashboard.widgets', 'Widgets')}</span>
-                <button onClick={() => setShowConfig(false)} aria-label="Close"><X size={14} className="text-slate-500 hover:text-white" /></button>
+            <div className="absolute z-[1000] mt-2 bg-slate-950 border border-white/10 rounded-xl p-4 shadow-xl w-64 animate-in fade-in zoom-in-95 duration-200">
+              <div className="flex items-center justify-between mb-3 border-b border-white/10 pb-2">
+                <span className="text-xs font-bold text-white/80 uppercase tracking-wider">{t('dashboard.widgets', 'Widgets')}</span>
+                <button onClick={() => setShowConfig(false)} aria-label="Close"><X size={14} className="text-white/40 hover:text-white" /></button>
               </div>
               <div className="space-y-2">
                 {Object.keys(DEFAULT_WIDGET_CONFIG).map((key) => (
                   <label key={key} className="flex items-center justify-between cursor-pointer group">
-                    <span className="text-sm text-slate-400 group-hover:text-slate-200 transition-colors">
+                    <span className="text-sm text-white/60 group-hover:text-white/90 transition-colors">
                       {t(`dashboard.widget.${key}`, key.replace('show', ''))}
                     </span>
                     <input 
                       type="checkbox" 
                       checked={config[key as keyof WidgetConfig]} 
                       onChange={() => toggleWidget(key as keyof WidgetConfig)}
-                      className="rounded bg-slate-800 border-slate-700 text-primary-500 focus:ring-offset-slate-900 focus:ring-primary-500/50"
+                      className="rounded bg-black/40 border-white/10 text-primary-500 focus:ring-offset-slate-950 focus:ring-primary-500/50"
                     />
                   </label>
                 ))}
@@ -362,17 +363,17 @@ export function Dashboard({
               {recentGames.map((game) => (
                 <div 
                   key={game.id} 
-                  className="group relative aspect-[3/4] bg-slate-800 rounded-xl overflow-hidden cursor-pointer border border-white/5 hover:border-primary-500/50 transition-all hover:shadow-lg hover:shadow-primary-500/10"
+                  className="group relative aspect-[3/4] bg-black/20 rounded-xl overflow-hidden cursor-pointer border border-white/5 hover:border-primary-500/50 transition-all duration-200 ease-in-out hover:shadow-lg hover:shadow-primary-500/10"
                   onClick={() => onSelectGame(game.id)}
                 >
                   {game.box_art_url ? (
                     <img 
                       src={game.box_art_url} 
                       alt={game.title} 
-                      className="w-full h-full object-cover transition-transform group-hover:scale-105 duration-300"
+                      className="w-full h-full object-cover transition-transform duration-200 ease-in-out group-hover:scale-105"
                     />
                   ) : (
-                    <div className="w-full h-full flex items-center justify-center bg-slate-800 text-slate-600 font-bold p-4 text-center">
+                    <div className="w-full h-full flex items-center justify-center bg-black/40 text-white/40 font-bold p-4 text-center">
                       {game.title}
                     </div>
                   )}
@@ -383,7 +384,7 @@ export function Dashboard({
                         e.stopPropagation()
                         onPlayGame(game.id)
                       }}
-                      className="w-full py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform"
+                      className="w-full py-2 bg-primary-600 hover:bg-primary-500 text-white rounded-lg font-bold text-xs flex items-center justify-center gap-2 transform translate-y-2 group-hover:translate-y-0 transition-transform duration-200 ease-in-out"
                     >
                       <Play size={12} fill="currentColor" /> {t('dashboard.play', 'Play')}
                     </button>
@@ -428,9 +429,9 @@ export function Dashboard({
                   rel="noreferrer"
                   className="block bg-white/5 hover:bg-white/10 border border-white/5 rounded-xl p-4 transition-colors group"
                 >
-                  <h3 className="text-sm font-semibold text-slate-200 group-hover:text-primary-400 transition-colors mb-1 line-clamp-1">{item.title}</h3>
-                  <p className="text-xs text-slate-400 line-clamp-2">{item.contents || item.summary || 'No description available.'}</p>
-                  <div className="mt-2 flex items-center gap-2 text-[10px] text-slate-500">
+                  <h3 className="text-sm font-semibold text-white/90 group-hover:text-primary-400 transition-colors mb-1 line-clamp-1">{item.title}</h3>
+                  <p className="text-xs text-white/60 line-clamp-2">{stripSteamBBCode(item.contents || item.summary || 'No description available.')}</p>
+                  <div className="mt-2 flex items-center gap-2 text-[10px] text-white/40">
                     <span>{new Date(item.published_at * 1000).toLocaleDateString()}</span>
                     <span>•</span>
                     <span>{item.feedlabel || 'Steam'}</span>
@@ -439,7 +440,7 @@ export function Dashboard({
               ))}
               
               {news.length === 0 && (
-                 <div className="p-6 text-center text-slate-500 bg-white/5 rounded-xl border border-white/5">
+                 <div className="p-6 text-center text-white/40 bg-white/5 rounded-xl border border-white/5">
                   {t('dashboard.noNews', 'No news available right now.')}
                  </div>
               )}
@@ -465,15 +466,15 @@ export function Dashboard({
                 
                 <h3 className="text-xl font-bold text-white mb-4 line-clamp-2">{recommendation.title}</h3>
                 
-                <div className="aspect-video bg-slate-800 rounded-lg overflow-hidden mb-4 shadow-lg">
+                <div className="aspect-video bg-black/20 rounded-lg overflow-hidden mb-4 shadow-lg">
                    {recommendation.metadata?.background || recommendation.box_art_url ? (
                       <img 
                         src={recommendation.metadata?.background || recommendation.box_art_url} 
                         className="w-full h-full object-cover" 
                       />
                    ) : (
-                      <div className="w-full h-full flex items-center justify-center bg-slate-800">
-                        <Gamepad2 className="text-slate-600" />
+                      <div className="w-full h-full flex items-center justify-center bg-black/40">
+                        <Gamepad2 className="text-white/40" />
                       </div>
                    )}
                 </div>
@@ -552,31 +553,31 @@ export function Dashboard({
              <div className="grid grid-cols-2 gap-3">
                 <button 
                   onClick={() => onNavigate('home', 'installed')}
-                  className="p-3 bg-slate-900/50 hover:bg-slate-800 rounded-xl border border-white/5 hover:border-white/10 text-left transition-all"
+                  className="p-3 bg-black/40 hover:bg-white/10 rounded-xl border border-white/5 hover:border-white/10 text-left transition-all duration-200 ease-in-out active:scale-95"
                 >
                    <CheckCircle2 size={18} className="text-green-400 mb-2" />
-                   <div className="text-xs font-medium text-slate-300">Installed</div>
+                   <div className="text-xs font-medium text-white/80">Installed</div>
                 </button>
                 <button 
                   onClick={() => onNavigate('home', 'favorites')}
-                  className="p-3 bg-slate-900/50 hover:bg-slate-800 rounded-xl border border-white/5 hover:border-white/10 text-left transition-all"
+                  className="p-3 bg-black/40 hover:bg-white/10 rounded-xl border border-white/5 hover:border-white/10 text-left transition-all duration-200 ease-in-out active:scale-95"
                 >
                    <Trophy size={18} className="text-yellow-400 mb-2" />
-                   <div className="text-xs font-medium text-slate-300">Favorites</div>
+                   <div className="text-xs font-medium text-white/80">Favorites</div>
                 </button>
                 <button 
                   onClick={() => onNavigate('inventory')}
-                  className="p-3 bg-slate-900/50 hover:bg-slate-800 rounded-xl border border-white/5 hover:border-white/10 text-left transition-all"
+                  className="p-3 bg-black/40 hover:bg-white/10 rounded-xl border border-white/5 hover:border-white/10 text-left transition-all duration-200 ease-in-out active:scale-95"
                 >
                    <LayoutGrid size={18} className="text-blue-400 mb-2" />
-                   <div className="text-xs font-medium text-slate-300">Collection</div>
+                   <div className="text-xs font-medium text-white/80">Collection</div>
                 </button>
                  <button 
                   onClick={() => onNavigate('social')}
-                  className="p-3 bg-slate-900/50 hover:bg-slate-800 rounded-xl border border-white/5 hover:border-white/10 text-left transition-all"
+                  className="p-3 bg-black/40 hover:bg-white/10 rounded-xl border border-white/5 hover:border-white/10 text-left transition-all duration-200 ease-in-out active:scale-95"
                 >
                    <Users size={18} className="text-pink-400 mb-2" />
-                   <div className="text-xs font-medium text-slate-300">Friends</div>
+                   <div className="text-xs font-medium text-white/80">Friends</div>
                 </button>
              </div>
           </section>
@@ -585,26 +586,26 @@ export function Dashboard({
           {/* 5. System Status (Simplified) */}
           {config.showSystemStatus && (
           <section className="bg-white/5 border border-white/5 rounded-2xl p-5">
-             <h3 className="text-sm font-semibold text-slate-300 mb-4 flex items-center gap-2">
+             <h3 className="text-sm font-semibold text-white/80 mb-4 flex items-center gap-2">
                 <Activity size={16} /> {t('dashboard.systemStatus', 'System Status')}
              </h3>
              <div className="space-y-3">
                <div className="flex items-center justify-between text-xs">
-                 <span className="text-slate-400">Network</span>
+                 <span className="text-white/60">Network</span>
                  <span className={clsx("flex items-center gap-1.5 font-medium", isOnline ? "text-green-400" : "text-red-400")}>
                    <span className={clsx("w-1.5 h-1.5 rounded-full", isOnline ? "bg-green-400" : "bg-red-400")}></span> 
                    {isOnline ? 'Online' : 'Offline'}
                  </span>
                </div>
                <div className="flex items-center justify-between text-xs">
-                 <span className="text-slate-400">Database</span>
+                 <span className="text-white/60">Database</span>
                  <span className="flex items-center gap-1.5 text-green-400 font-medium">
                    <span className="w-1.5 h-1.5 rounded-full bg-green-400"></span> Healthy
                  </span>
                </div>
                 <div className="flex items-center justify-between text-xs">
-                 <span className="text-slate-400">App Version</span>
-                 <span className="text-slate-500">v1.0.4</span>
+                 <span className="text-white/60">App Version</span>
+                 <span className="text-white/40">v1.0.4</span>
                </div>
              </div>
           </section>

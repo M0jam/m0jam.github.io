@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2, Home, Newspaper, Settings, LayoutGrid, LogIn } from 'lucide-react';
+import { Download, Github, Layers, Zap, Search, Users, Globe, Monitor, Star, Check, Twitter, MessageCircle, Heart, Play, Loader2, Home, Newspaper, Settings, LayoutGrid } from 'lucide-react';
 import { motion, useScroll, useTransform, AnimatePresence } from 'framer-motion';
-import { AuthOverlay } from './components/Overlay/AuthOverlay';
+import { CookieConsent } from './components/CookieConsent';
+import { Footer } from './components/Footer';
+import { TermsOfService } from './components/Legal/TermsOfService';
+import { PrivacyPolicy } from './components/Legal/PrivacyPolicy';
 
 const games = [
   { id: 1, title: "Cyberpunk 2077", cover: "https://shared.akamai.steamstatic.com/store_item_assets/steam/apps/1091500/library_600x900.jpg", year: 2020, developer: "CD Projekt Red", rating: 4.5 },
@@ -19,40 +22,23 @@ function App() {
   const y1 = useTransform(scrollY, [0, 500], [0, 200]);
   const y2 = useTransform(scrollY, [0, 500], [0, -150]);
 
-  const [isAuthOpen, setIsAuthOpen] = useState(false);
-  const [user, setUser] = useState<{ username: string; email: string; id?: string } | null>(null);
+  // Simple view state for legal pages
+  const [currentView, setCurrentView] = useState<'home' | 'terms' | 'privacy'>('home');
 
   useEffect(() => {
-    // Check for cookie-based session
-    const checkSession = async () => {
-      try {
-        const res = await fetch('/api/me');
-        if (res.ok) {
-          const data = await res.json();
-          if (data.user) {
-            setUser(data.user);
-          }
-        }
-      } catch (err) {
-        console.error('Session check failed', err);
-      }
+    const handleHashChange = () => {
+      const hash = window.location.hash.slice(1); // remove #
+      if (hash === 'terms') setCurrentView('terms');
+      else if (hash === 'privacy') setCurrentView('privacy');
+      else setCurrentView('home');
+      window.scrollTo(0, 0);
     };
-    checkSession();
+
+    window.addEventListener('hashchange', handleHashChange);
+    handleHashChange(); // check initial hash
+
+    return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
-
-  const handleLoginSuccess = (userData: any) => {
-    setUser(userData);
-    setIsAuthOpen(false);
-  };
-
-  const handleLogout = async () => {
-    try {
-      await fetch('/api/logout');
-      setUser(null);
-    } catch (err) {
-      console.error('Logout failed', err);
-    }
-  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white selection:bg-primary-500/30 overflow-x-hidden flex flex-col">
@@ -60,7 +46,10 @@ function App() {
       <nav className="fixed top-0 left-0 right-0 z-50 bg-slate-950/80 backdrop-blur-md border-b border-white/5">
         <div className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <button 
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            onClick={() => {
+              window.location.hash = '';
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
             className="flex items-center gap-3 hover:opacity-80 transition-opacity"
           >
             <img src="/logo.png" alt="PlayHub Logo" className="w-10 h-10" />
@@ -76,26 +65,6 @@ function App() {
               <Github size={24} />
             </a>
 
-            {user ? (
-              <button 
-                onClick={() => setIsAuthOpen(true)}
-                className={`flex items-center gap-3 pl-4 border-l border-white/10 transition-colors opacity-70 hover:opacity-100`}
-              >
-                <span className="text-sm font-medium text-slate-300 hidden sm:block">{user.username}</span>
-                <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-sm font-bold">
-                  {user.username[0].toUpperCase()}
-                </div>
-              </button>
-            ) : (
-              <button
-                onClick={() => setIsAuthOpen(true)}
-                className="hidden sm:flex items-center gap-2 px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
-              >
-                <LogIn size={16} />
-                Sign In
-              </button>
-            )}
-
             <a 
               href={downloadUrl}
               className="bg-primary-600 hover:bg-primary-500 text-white px-6 py-2 rounded-full font-medium transition-all hover:shadow-[0_0_20px_rgba(139,92,246,0.3)] flex items-center gap-2"
@@ -107,19 +76,9 @@ function App() {
         </div>
       </nav>
 
-      <AnimatePresence>
-        {isAuthOpen && (
-          <AuthOverlay 
-            isOpen={isAuthOpen} 
-            onClose={() => setIsAuthOpen(false)} 
-            user={user}
-            onLoginSuccess={handleLoginSuccess}
-            onLogout={handleLogout}
-          />
-        )}
-      </AnimatePresence>
+      <div className="flex-1 pt-20">
 
-      <div className="flex-1">
+        {currentView === 'home' && (
         <>
             {/* Hero Section */}
             <section className="pt-32 pb-20 px-6 relative overflow-hidden">
@@ -397,17 +356,15 @@ function App() {
       </div>
 
       {/* Footer */}
-      <footer className="py-12 border-t border-white/5 bg-slate-900/50">
-        <div className="max-w-7xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-6">
-          <div className="flex items-center gap-3 opacity-50 hover:opacity-100 transition-opacity duration-300">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 grayscale hover:grayscale-0 transition-all" />
-            <span className="font-semibold">PlayHub</span>
-          </div>
-          <div className="text-slate-500 text-sm">
-            © {new Date().getFullYear()} PlayHub. Open source under MIT License.
-          </div>
-        </div>
-      </footer>
+        </>
+        )}
+        
+        {currentView === 'terms' && <TermsOfService />}
+        {currentView === 'privacy' && <PrivacyPolicy />}
+      </div>
+      
+      <Footer />
+      <CookieConsent />
     </div>
   );
 }

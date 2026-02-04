@@ -60,10 +60,10 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
         onClick={() => onClick(game.id)}
         onMouseEnter={onMouseEnter}
         onMouseLeave={onMouseLeave}
-        className="aspect-[2/3] w-full mx-auto bg-slate-900 rounded-xl cursor-pointer border border-white/5 shadow-lg relative overflow-hidden group transition-all duration-300 hover:-translate-y-2 hover:shadow-[0_0_25px_rgba(var(--color-primary-500),0.3)] hover:border-primary-500/30"
+        className="aspect-[2/3] w-full mx-auto bg-slate-900 rounded-xl cursor-pointer border border-white/5 shadow-lg relative overflow-hidden group transition-all duration-200 ease-in-out hover:-translate-y-2 hover:shadow-[0_0_25px_rgba(var(--color-primary-500),0.3)] hover:border-primary-500/30 active:scale-95"
     >
       {/* Sheen effect */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none z-10" />
+      <div className="absolute inset-0 bg-gradient-to-tr from-white/0 via-white/5 to-white/0 opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out pointer-events-none z-10" />
 
       {!imageError && imgSrc ? (
         <>
@@ -73,7 +73,7 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
           <img 
               src={imgSrc} 
               alt={game.title} 
-              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" 
+              className="w-full h-full object-cover transition-transform duration-200 ease-in-out group-hover:scale-110" 
               onError={handleImageError}
               onLoad={() => setIsLoading(false)}
               loading="lazy"
@@ -86,7 +86,7 @@ export function GameCard({ game, onToggleFavorite, onClick, onChangeStatus, onMo
         </div>
       )}
       
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 z-20">
+      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-200 ease-in-out z-20">
           {onChangeStatus && showDetails && (
             <div className="absolute top-2 left-2">
               <select

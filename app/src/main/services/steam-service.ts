@@ -1,5 +1,6 @@
 import { ipcMain, BrowserWindow, app } from 'electron'
 import { dbManager } from '../database'
+import { classificationService } from './classification-service'
 import { randomUUID } from 'crypto'
 
 export class SteamService {
@@ -270,7 +271,7 @@ export class SteamService {
       this.broadcastProgress('Syncing game library...', 60)
       const games = await this.fetchGames(steamId, cookieHeader, apiKey)
       if (games && games.length > 0) {
-        this.importGames(steamId, games)
+        await this.importGames(steamId, games)
         totalSynced += games.length
       }
 
@@ -656,7 +657,7 @@ export class SteamService {
     }
   }
 
-  private importGames(steamId: string, games: any[]) {
+  private async importGames(steamId: string, games: any[]) {
     const db = dbManager.getDb()
     
     // Check for new games
@@ -701,6 +702,18 @@ export class SteamService {
       }
     })
     tx(games)
+    try {
+      const ids = games.map(g => `steam_${g.appid}`)
+      const classifyStmt = db.prepare('SELECT id FROM games WHERE id = ?')
+      for (const id of ids) {
+        const row = classifyStmt.get(id) as any
+        if (row) {
+          await classificationService.applyClassification(id)
+        }
+      }
+    } catch (e) {
+      console.warn('Classification after Steam import failed:', e)
+    }
 
     if (newGamesCount > 0) {
         this.broadcastNotification('New Steam Games', `Added ${newGamesCount} new games to your library.`)

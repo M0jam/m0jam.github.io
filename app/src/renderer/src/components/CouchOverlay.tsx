@@ -152,13 +152,13 @@ export function CouchOverlay({ games, onPlay, onClose, visible }: CouchOverlayPr
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.5 }}
-          className="fixed inset-0 z-[10000] bg-slate-950 text-white flex flex-col overflow-hidden font-sans select-none"
+          className="fixed inset-0 z-[200] bg-slate-950 text-white flex flex-col overflow-hidden font-sans select-none"
         >
            {/* Intro Sequence */}
            <AnimatePresence>
             {showIntro && (
               <motion.div 
-                className="absolute inset-0 z-50 flex items-center justify-center bg-slate-950"
+                className="absolute inset-0 z-[250] flex items-center justify-center bg-slate-950"
                 initial={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 transition={{ duration: 0.8, ease: "easeInOut" }}

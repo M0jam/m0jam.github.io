@@ -3,8 +3,9 @@ import { dbManager } from '../database'
 import { join } from 'path'
 import fs from 'fs'
 import { playtimeMonitor } from './playtime-monitor'
-import { randomUUID } from 'crypto'
 import { hltbService } from './hltb-service'
+import { classificationService } from './classification-service'
+import { randomUUID } from 'crypto'
 import log from 'electron-log'
 
 // CONSTANTS
@@ -164,6 +165,9 @@ export class GameService {
       db.prepare('UPDATE games SET metadata = ? WHERE id = ?').run(JSON.stringify(metadata), game.id)
       // Update local object
       game.metadata = metadata
+      try {
+        await classificationService.applyClassification(game.id)
+      } catch {}
     }
   }
 
@@ -222,6 +226,10 @@ export class GameService {
                 db.prepare(`UPDATE games SET ${updates} WHERE id = ?`).run(...params)
                 
                 game.metadata = metadata
+                
+                try {
+                  await classificationService.applyClassification(game.id)
+                } catch {}
             }
         }
     } catch (error) {
@@ -242,6 +250,7 @@ export class GameService {
       if (data[appId] && data[appId].success) {
         const details = data[appId].data
         const result = {
+            type: details.type,
             description: details.short_description,
             about: details.about_the_game,
             developer: details.developers ? details.developers.join(', ') : '',

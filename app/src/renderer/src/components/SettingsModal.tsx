@@ -181,6 +181,23 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
   const [showIntegrationOnboarding, setShowIntegrationOnboarding] = useState(false)
   const [backupJson, setBackupJson] = useState('')
   const [backupStatus, setBackupStatus] = useState('')
+  const [isReclassifying, setIsReclassifying] = useState(false)
+  const [reclassifyStatus, setReclassifyStatus] = useState('')
+
+  const handleReclassifyAll = async () => {
+    setIsReclassifying(true)
+    setReclassifyStatus('Reclassifying library...')
+    try {
+      await electron.ipcRenderer.invoke('classification:reclassify-all')
+      setReclassifyStatus('Reclassification started')
+      setTimeout(() => setReclassifyStatus(''), 3000)
+    } catch (e) {
+      console.error(e)
+      setReclassifyStatus('Failed to start reclassification')
+    } finally {
+      setIsReclassifying(false)
+    }
+  }
 
   useEffect(() => {
     const handleSteamProgress = (_: any, data: { message: string; percent: number }) => {
@@ -911,30 +928,30 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
   }
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-8" onClick={onClose}>
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl w-full max-w-4xl h-[600px] flex overflow-hidden shadow-2xl relative" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-8 animate-in fade-in duration-200" onClick={onClose}>
+      <div className="bg-slate-900 border border-white/10 rounded-2xl w-full max-w-4xl h-[600px] flex overflow-hidden shadow-2xl relative" onClick={e => e.stopPropagation()}>
         <button
           type="button"
           aria-label="Close settings"
           onClick={onClose}
-          className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/80 text-slate-300 hover:text-white hover:border-slate-500 hover:bg-slate-900 active:bg-slate-950 transition-colors shadow-lg shadow-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+          className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full border border-white/10 bg-black/20 text-slate-400 hover:text-white hover:bg-white/10 active:scale-95 transition-all duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         >
           ✕
         </button>
-        <div className="w-64 bg-slate-950/50 border-r border-slate-800 p-6 flex flex-col gap-2">
-          <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+        <div className="w-64 bg-black/20 border-r border-white/10 p-6 flex flex-col gap-2">
+          <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
             <span className="text-primary-500">⚙️</span> {t('settings.sidebar.title')}
           </h2>
           
           <button 
             onClick={() => setActiveTab('account')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'account' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'account' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-white/5 hover:text-white")}
           >
             {t('settings.sidebar.account')}
           </button>
           <button 
             onClick={() => setActiveTab('integrations')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'integrations' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'integrations' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-white/5 hover:text-white")}
           >
             {t('settings.sidebar.integrations')}
           </button>
@@ -948,7 +965,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
             }}
             className={clsx(
               'text-left px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-between gap-2',
-              activeTab === 'updates' ? 'bg-primary-600/10 text-primary-400' : 'text-slate-400 hover:bg-slate-800 hover:text-white'
+              activeTab === 'updates' ? 'bg-primary-600/10 text-primary-400' : 'text-slate-400 hover:bg-white/5 hover:text-white'
             )}
           >
             <span>{t('settings.sidebar.updates')}</span>
@@ -956,51 +973,51 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
           </button>
           <button 
             onClick={() => setActiveTab('appearance')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'appearance' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'appearance' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-white/5 hover:text-white")}
           >
             {t('settings.sidebar.appearance')}
           </button>
           <button 
             onClick={() => setActiveTab('general')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'general' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'general' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-white/5 hover:text-white")}
           >
             {t('settings.sidebar.general')}
           </button>
           <button 
             onClick={() => setActiveTab('feedback')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'feedback' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'feedback' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-white/5 hover:text-white")}
           >
             {t('settings.sidebar.feedback')}
           </button>
           <button 
             onClick={() => setActiveTab('system')}
-            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'system' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-slate-800 hover:text-white")}
+            className={clsx("text-left px-4 py-3 rounded-lg font-medium transition-colors", activeTab === 'system' ? "bg-primary-600/10 text-primary-400" : "text-slate-400 hover:bg-white/5 hover:text-white")}
           >
             {t('settings.sidebar.system')}
           </button>
         </div>
 
-        <div className="flex-1 p-8 overflow-y-auto">
+        <div className="flex-1 p-8 overflow-y-auto custom-scrollbar">
           {activeTab === 'account' && (
             <div className="space-y-8">
               <header>
-                <h3 className="text-2xl font-bold mb-2">{t('settings.account.title')}</h3>
+                <h3 className="text-2xl font-bold mb-2 text-white">{t('settings.account.title')}</h3>
                 <p className="text-slate-400">{t('settings.account.description')}</p>
               </header>
 
-              <div className="flex items-center gap-6 p-6 bg-slate-800/50 rounded-xl border border-slate-700">
-                <div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center text-3xl font-bold">
+              <div className="flex items-center gap-6 p-6 bg-white/5 rounded-xl border border-white/10">
+                <div className="w-20 h-20 rounded-full bg-primary-600 flex items-center justify-center text-3xl font-bold text-white shadow-lg shadow-primary-900/20">
                   {avatarPreview ? <img src={avatarPreview} className="w-full h-full rounded-full object-cover" /> : user.username[0].toUpperCase()}
                 </div>
                 <div>
-                  <div className="text-xl font-bold">{displayName}</div>
+                  <div className="text-xl font-bold text-white">{displayName}</div>
                   <div className="text-slate-400">{email}</div>
                 </div>
               </div>
 
               <div className="max-w-md space-y-4">
                 <div>
-                  <div className="text-sm font-medium text-slate-200 mb-1">{t('settings.account.displayNameLabel')}</div>
+                  <div className="text-sm font-medium text-slate-300 mb-1">{t('settings.account.displayNameLabel')}</div>
                   <input
                     type="text"
                     value={displayName}
@@ -1009,13 +1026,13 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       setProfileError('')
                       setProfileStatus('')
                     }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500 transition-colors placeholder-slate-600"
                   />
                   <div className="text-xs text-slate-500 mt-1">{t('settings.account.displayNameHelp')}</div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-slate-200 mb-1">{t('settings.account.emailLabel')}</div>
+                  <div className="text-sm font-medium text-slate-300 mb-1">{t('settings.account.emailLabel')}</div>
                   <input
                     type="email"
                     value={email}
@@ -1024,21 +1041,21 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                       setProfileError('')
                       setProfileStatus('')
                     }}
-                    className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
+                    className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500 transition-colors placeholder-slate-600"
                   />
                   <div className="text-xs text-slate-500 mt-1">{t('settings.account.emailHelp')}</div>
                 </div>
 
                 <div>
-                  <div className="text-sm font-medium text-slate-200 mb-1">{t('settings.account.profilePictureLabel')}</div>
+                  <div className="text-sm font-medium text-slate-300 mb-1">{t('settings.account.profilePictureLabel')}</div>
                   <div className="flex items-center gap-3">
-                    <label className="px-3 py-2 bg-slate-800 border border-slate-700 rounded-lg text-xs font-medium cursor-pointer hover:border-primary-500 transition-colors">
+                    <label className="px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-xs font-medium cursor-pointer hover:bg-white/10 hover:border-white/20 text-slate-300 hover:text-white transition-colors">
                       {t('settings.account.changeAvatar')}
                       <input type="file" accept="image/*" className="hidden" onChange={handleAvatarChange} />
                     </label>
                     {avatarPreview && (
                       <button
-                        className="text-xs text-slate-400 hover:text-red-400"
+                        className="text-xs text-slate-400 hover:text-red-400 transition-colors"
                         onClick={() => setAvatarPreview(null)}
                       >
                         {t('settings.account.removeAvatar')}
@@ -1050,12 +1067,12 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
 
                 {showPasswordField && (
                   <div>
-                    <div className="text-sm font-medium text-slate-200 mb-1">{t('settings.account.confirmPasswordLabel')}</div>
+                    <div className="text-sm font-medium text-slate-300 mb-1">{t('settings.account.confirmPasswordLabel')}</div>
                     <input
                       type="password"
                       value={currentPassword}
                       onChange={(e) => setCurrentPassword(e.target.value)}
-                      className="w-full bg-slate-900 border border-slate-700 rounded px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500"
+                      className="w-full bg-black/20 border border-white/10 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-primary-500 transition-colors placeholder-slate-600"
                       placeholder={t('settings.account.confirmPasswordPlaceholder')}
                     />
                   </div>
@@ -1245,7 +1262,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
               <div className="bg-slate-800/50 p-4 rounded-lg border border-slate-700">
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center space-x-3">
-                    <div className="w-10 h-10 bg-[#9146FF] rounded-lg flex items-center justify-center">
+                    <div className="w-10 h-10 bg-brand-twitch rounded-lg flex items-center justify-center">
                       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="white"><path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/></svg>
                     </div>
                     <div>
@@ -1279,7 +1296,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                   <div className="flex gap-2">
                     <button
                       onClick={saveIgdbCredentials}
-                      className="px-4 py-2 bg-[#9146FF] hover:bg-[#772ce8] text-white text-sm font-medium rounded transition-colors"
+                      className="px-4 py-2 bg-brand-twitch hover:bg-brand-twitch-hover text-white text-sm font-medium rounded transition-colors"
                     >
                       {t('settings.integrations.saveIgdb') || 'Save Credentials'}
                     </button>
@@ -1302,11 +1319,11 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                   </p>
                 </div>
               </div>
-
+              
               <div className="p-6 bg-slate-800/50 rounded-xl border border-slate-700">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#171a21] rounded-lg flex items-center justify-center">
+                      <div className="w-12 h-12 bg-brand-steam rounded-lg flex items-center justify-center">
                         <svg className="w-8 h-8 text-white" viewBox="0 0 24 24" fill="currentColor"><path d="M11.979 0C5.666 0 .531 4.908.013 11.12l4.383 1.815c.578-.853 1.542-1.418 2.64-1.418 1.487 0 2.744.996 3.12 2.368l4.757-.678c.092-.48.146-.98.146-1.492 0-4.225-3.425-7.65-7.65-7.65-4.225 0-7.65 3.425-7.65 7.65 0 2.923 1.638 5.46 4.024 6.72L.012 23.987c-.004-.035-.012-.07-.012-.106 0-6.613 5.366-11.979 11.979-11.979 6.613 0 11.979 5.366 11.979 11.979 0 .036-.008.071-.012.106l-3.774-5.45c2.386-1.26 4.024-3.797 4.024-6.72 0-4.225-3.425-7.65-7.65-7.65z"/></svg>
                       </div>
                       <div>
@@ -1325,7 +1342,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                           "px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2",
                           steamId
                             ? "bg-green-600/20 text-green-400"
-                            : "bg-[#171a21] hover:bg-slate-700 text-white"
+                            : "bg-brand-steam hover:bg-slate-700 text-white"
                         )}
                     >
                         {isSteamConnecting && (
@@ -1498,7 +1515,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                 <div className="p-6 bg-slate-800/50 rounded-xl border border-slate-700">
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-4">
-                      <div className="w-12 h-12 bg-[#333] rounded-lg flex items-center justify-center font-bold text-white">E</div>
+                      <div className="w-12 h-12 bg-brand-epic rounded-lg flex items-center justify-center font-bold text-white">E</div>
                       <div>
                         <div className="font-bold text-lg">{t('settings.integrations.epicTitle')}</div>
                         <div className="text-sm text-slate-400">
@@ -1603,7 +1620,7 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                         'px-4 py-2 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center gap-2',
                         gogId
                           ? 'bg-green-600/20 text-green-400'
-                          : 'bg-[#5d2d88] hover:bg-[#4a246d] text-white'
+                          : 'bg-brand-gog hover:bg-brand-gogHover text-white'
                       )}
                     >
                       {isGogConnecting && (
@@ -2340,6 +2357,29 @@ export function SettingsModal({ user, isOpen, onClose, onLogout, onUserUpdated, 
                         <span className="text-slate-400">{t('settings.system.uptime')}</span>
                         <span className="text-white">{t('settings.system.uptimeHours', { hours: (systemStats.uptime / 3600).toFixed(1) })}</span>
                       </div>
+                    </div>
+                  </div>
+
+                  <div className="p-6 bg-slate-800/50 rounded-xl border border-slate-700">
+                    <h4 className="font-bold text-slate-200 mb-4 flex items-center gap-2">
+                      <span className="text-blue-400">🏷️</span> {t('settings.system.classificationTitle') || 'Library Classification'}
+                    </h4>
+                    <p className="text-sm text-slate-400 mb-4">
+                      {t('settings.system.classificationDescription') || 'PlayHub automatically classifies your library into Games and Utilities. You can manually re-run this process if items are miscategorized.'}
+                    </p>
+                    <div className="flex items-center gap-4">
+                      <button
+                        onClick={handleReclassifyAll}
+                        disabled={isReclassifying}
+                        className="px-4 py-2 bg-slate-700 hover:bg-slate-600 disabled:opacity-50 rounded-lg text-sm font-medium text-white transition-colors flex items-center gap-2"
+                      >
+                        {isReclassifying ? (
+                          <span className="inline-block w-3 h-3 border-2 border-white/40 border-t-transparent rounded-full animate-spin" />
+                        ) : (
+                          t('settings.system.reclassifyButton') || 'Reclassify All Games'
+                        )}
+                      </button>
+                      {reclassifyStatus && <span className="text-sm text-slate-400">{reclassifyStatus}</span>}
                     </div>
                   </div>
                 </div>

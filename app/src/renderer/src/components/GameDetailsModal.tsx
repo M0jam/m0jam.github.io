@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import clsx from 'clsx'
-import { X, Play, Clock, Star, Download, Tag as TagIcon, Plus, StickyNote, Image as ImageIcon, Video } from 'lucide-react'
+import { X, Play, Clock, Star, Download, Tag as TagIcon, Plus, StickyNote, Image as ImageIcon, Video, Edit2 } from 'lucide-react'
 import { electron } from '../utils/electron'
 import { useTranslation } from 'react-i18next'
 import { MediaViewer } from './MediaViewer'
@@ -37,6 +37,7 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
   // Media Viewer state
   const [mediaViewerOpen, setMediaViewerOpen] = useState(false)
   const [mediaViewerIndex, setMediaViewerIndex] = useState(0)
+  const [showClassificationOverride, setShowClassificationOverride] = useState(false)
 
   const { t } = useTranslation()
 
@@ -159,6 +160,17 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
     }
   }
 
+  const handleClassificationOverride = async (type: 'game' | 'utility' | 'auto') => {
+    if (!game) return
+    try {
+      await electron.ipcRenderer.invoke('classification:set-override', { gameId: game.id, appType: type })
+      setShowClassificationOverride(false)
+      await loadGameDetails(game.id, true)
+    } catch (error) {
+      console.error('Failed to set override:', error)
+    }
+  }
+
 
   const loadGameDetails = async (id: string, hasData: boolean = false) => {
     if (!hasData) setLoading(true)
@@ -256,16 +268,16 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" onClick={onClose}>
       <div 
-        className="bg-slate-900 w-full max-w-6xl h-[85vh] rounded-2xl border border-slate-800 shadow-2xl overflow-hidden flex flex-col relative"
+        className="bg-slate-950 w-full max-w-6xl h-[85vh] rounded-2xl border border-white/10 shadow-2xl overflow-hidden flex flex-col relative"
         onClick={e => e.stopPropagation()}
       >
         <button 
             onClick={onClose}
             type="button"
             aria-label={t('gameDetails.actions.close')}
-            className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full border border-slate-700/80 bg-slate-950/80 text-slate-300 hover:text-white hover:border-slate-500 hover:bg-slate-900 active:bg-slate-950 transition-colors shadow-lg shadow-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-900"
+            className="absolute top-3 right-3 z-10 w-11 h-11 flex items-center justify-center rounded-full border border-white/10 bg-black/40 text-white/60 hover:text-white hover:border-white/20 hover:bg-black/60 active:bg-black/80 transition-all duration-200 active:scale-90 shadow-lg shadow-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2 focus-visible:ring-offset-slate-950"
         >
             <X className="w-4 h-4" />
         </button>
@@ -282,19 +294,19 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
                         {game.background_url ? (
                             <img src={game.background_url} className="w-full h-full object-cover" />
                         ) : (
-                            <div className="w-full h-full bg-slate-800" />
+                            <div className="w-full h-full bg-white/5" />
                         )}
-                        <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/50 to-transparent"></div>
                     </div>
                     
                     <div className="absolute bottom-0 left-0 p-8 w-full flex items-end gap-6">
-                        <div className="w-48 aspect-[2/3] rounded-lg shadow-2xl border border-slate-700 overflow-hidden bg-slate-800 shrink-0 transform translate-y-12 relative">
+                        <div className="w-48 aspect-[2/3] rounded-lg shadow-2xl border border-white/10 overflow-hidden bg-white/5 shrink-0 transform translate-y-12 relative">
                             {game.box_art_url && <img src={game.box_art_url} className="w-full h-full object-cover" />}
                             <div className="absolute inset-0 pointer-events-none">
-                              <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[10px] font-medium text-slate-100">
+                              <div className="absolute bottom-2 left-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[10px] font-medium text-white">
                                 {releaseYear ?? '–'}
                               </div>
-                              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[10px] font-medium text-slate-100 flex items-center gap-1">
+                              <div className="absolute bottom-2 right-2 px-2 py-0.5 rounded-md bg-black/60 border border-white/10 text-[10px] font-medium text-white flex items-center gap-1">
                                 <div className="flex items-center gap-0.5">
                                   {[1, 2, 3, 4, 5].map(star => (
                                     <Star
@@ -303,7 +315,7 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
                                         'w-3 h-3',
                                         (officialRatingOutOfFive || 0) >= star
                                           ? 'text-yellow-400 fill-yellow-400'
-                                          : 'text-slate-600'
+                                          : 'text-white/20'
                                       )}
                                     />
                                   ))}
@@ -319,33 +331,33 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
                                     <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
                                 )}
                             </h1>
-                            <div className="flex items-center gap-4 text-sm text-slate-300">
+                            <div className="flex items-center gap-4 text-sm text-white/70">
                                 {game.metadata?.developer && <span>{game.metadata.developer}</span>}
                                 {game.metadata?.release_date && (
                                     <>
-                                        <span className="w-1 h-1 rounded-full bg-slate-500"></span>
+                                        <span className="w-1 h-1 rounded-full bg-white/40"></span>
                                         <span>{game.metadata.release_date}</span>
                                     </>
                                 )}
                             </div>
-                            <nav className="flex space-x-6 mt-8 border-b border-slate-700/50">
+                            <nav className="flex space-x-6 mt-8 border-b border-white/10">
                                 <button 
                                     onClick={() => setActiveTab('overview')}
-                                    className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'overview' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                                    className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'overview' ? 'text-white' : 'text-white/60 hover:text-white'}`}
                                 >
                                     {t('gameDetails.tabs.overview')}
                                     {activeTab === 'overview' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 rounded-t-full"></div>}
                                 </button>
                                 <button 
                                     onClick={() => setActiveTab('stats')}
-                                    className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'stats' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                                    className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'stats' ? 'text-white' : 'text-white/60 hover:text-white'}`}
                                 >
                                     {t('gameDetails.tabs.stats')}
                                     {activeTab === 'stats' && <div className="absolute bottom-0 left-0 w-full h-0.5 bg-primary-500 rounded-t-full"></div>}
                                 </button>
                                 <button 
                                     onClick={() => setActiveTab('notes')}
-                                    className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'notes' ? 'text-white' : 'text-slate-400 hover:text-white'}`}
+                                    className={`pb-4 text-sm font-medium transition-colors relative ${activeTab === 'notes' ? 'text-white' : 'text-white/60 hover:text-white'}`}
                                 >
                                     <div className="flex items-center gap-2">
                                         <StickyNote className="w-4 h-4" />
@@ -528,6 +540,28 @@ export function GameDetailsModal({ gameId, initialGameData, isOpen, onClose }: G
                                           </dd>
                                       </div>
                                   )}
+                                  <div>
+                                    <dt className="text-slate-500 flex items-center gap-2">
+                                        Type
+                                        <button onClick={(e) => { e.stopPropagation(); setShowClassificationOverride(!showClassificationOverride); }} className="text-slate-500 hover:text-white transition-colors">
+                                            <Edit2 className="w-3 h-3" />
+                                        </button>
+                                    </dt>
+                                    <dd className="text-slate-200 capitalize relative">
+                                      {game.app_type || 'Game'}
+                                      {showClassificationOverride && (
+                                        <>
+                                            <div className="fixed inset-0 z-10" onClick={() => setShowClassificationOverride(false)}></div>
+                                            <div className="absolute top-full left-0 mt-1 w-32 bg-slate-800 border border-slate-700 rounded shadow-xl z-20 overflow-hidden">
+                                                <button onClick={() => handleClassificationOverride('game')} className="block w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-white">Game</button>
+                                                <button onClick={() => handleClassificationOverride('utility')} className="block w-full text-left px-3 py-2 text-sm hover:bg-slate-700 text-white">Utility</button>
+                                                <div className="border-t border-slate-700 my-1"></div>
+                                                <button onClick={() => handleClassificationOverride('auto')} className="block w-full text-left px-3 py-2 text-xs hover:bg-slate-700 text-slate-400">Reset to Auto</button>
+                                            </div>
+                                        </>
+                                      )}
+                                    </dd>
+                                  </div>
                                   <div>
                                     <dt className="text-slate-500">{t('gameDetails.overview.developer')}</dt>
                                     <dd className="text-slate-200">{game.metadata?.developer || t('gameDetails.overview.unknown')}</dd>

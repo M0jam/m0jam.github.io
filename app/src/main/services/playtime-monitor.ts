@@ -117,6 +117,10 @@ export class PlaytimeMonitor {
       return this.getCurrentSession(gameId)
     })
 
+    ipcMain.handle('playtime:get-active-sessions', async () => {
+      return this.getActiveSessions()
+    })
+
     ipcMain.handle('presence:get-enabled', async () => {
       return richPresenceEnabled
     })
@@ -332,6 +336,14 @@ export class PlaytimeMonitor {
       ORDER BY start_time DESC
       LIMIT 1
     `).get(gameId)
+  }
+
+  public getActiveSessions() {
+    const db = dbManager.getDb()
+    return db.prepare(`
+      SELECT * FROM play_sessions
+      WHERE end_time IS NULL
+    `).all()
   }
 }
 
