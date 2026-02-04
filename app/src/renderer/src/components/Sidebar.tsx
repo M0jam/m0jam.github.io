@@ -17,8 +17,8 @@ interface SidebarProps {
   setIsSettingsOpen: (isOpen: boolean) => void
   searchQuery: string
   setSearchQuery: (query: string) => void
-  activeTutorial: string | null
-  setActiveTutorial: (tutorial: string | null) => void // Accepts string to be compatible with 'accounts' | 'library' etc.
+  activeTutorial: "accounts" | "library" | "social" | "discord" | null
+  setActiveTutorial: (tutorial: "accounts" | "library" | "social" | "discord" | null) => void
 }
 
 const DISCORD_INVITE_URL: string | undefined =

@@ -1,4 +1,3 @@
-import React from 'react';
 import { Github, Twitter, Heart } from 'lucide-react';
 
 export function Footer() {
@@ -53,7 +52,7 @@ export function Footer() {
                 </a>
               </li>
               <li>
-                <button onClick={() => localStorage.removeItem('playhub_cookie_consent') || window.location.reload()} className="hover:text-primary-400 transition-colors text-left">
+                <button onClick={() => { localStorage.removeItem('playhub_cookie_consent'); window.location.reload(); }} className="hover:text-primary-400 transition-colors text-left">
                   Cookie Settings
                 </button>
               </li>
