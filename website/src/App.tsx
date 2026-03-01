@@ -353,10 +353,6 @@ function App() {
               </div>
             </section>
           </>
-      </div>
-
-      {/* Footer */}
-        </>
         )}
         
         {currentView === 'terms' && <TermsOfService />}
